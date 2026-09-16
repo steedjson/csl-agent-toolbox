@@ -83,6 +83,12 @@
 
 看本地浏览器页面内容、操作浏览器页面、把 UI 设计图/原型转成结构化需求清单。主体用 `agent-browser`（CDP、可访问性树 `@eN` refs、会话隔离、附着已登录 Chrome），AppleScript+JS 注入作为零配置后备（不重启、直接附着已打开的 Chrome，只读为主）。覆盖公开页读取、已登录页附着（`--auto-connect`/`--cdp` + `--pin-tab`）、SPA 原型逐页爬取（xiaopiu 52 页已验证）、图片批量下载与宽表分段读取。写操作默认逐项确认，只读默认。
 
+### 视觉感知（visual-perception）
+
+#### [perceived-form](./perceived-form/)
+
+按人眼实际怎么「看见」来诊断和校正图形：负空间、视觉重量、邻近语法、默认态 vs 兼容态、黄金家族尺子、马赫带与光学校正。适用于 UI / 图标 / Logo / 字标 / 生图提示词「几何对齐了仍别扭」。不替代落地页口味（`design-taste-frontend`）或读页面（`browser-ui-reader`）。
+
 ### Skill 管理（skill-management）
 
 #### [ln-install-skill](./ln-install-skill/)

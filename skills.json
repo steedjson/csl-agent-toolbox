@@ -163,6 +163,19 @@
         "references/yapi-api-routes.md",
         "tests/test_yapi_client.py"
       ]
+    },
+    {
+      "name": "perceived-form",
+      "category": "visual-perception",
+      "description": "Diagnose and correct visual form so it matches human perception: negative space, visual weight, proximity, default-vs-compat states, golden-family rulers, Mach bands, and optical correction",
+      "files": [
+        "SKILL.md",
+        "references/dimensions.md",
+        "references/optical-correction.md",
+        "references/golden-family.md",
+        "references/cases.md",
+        "examples/behavior-prompts.md"
+      ]
     }
   ]
 }
