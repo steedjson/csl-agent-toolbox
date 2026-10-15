@@ -35,7 +35,7 @@ description: 按个人 Django 项目基线(提炼自 wework/backend)初始化新
 python3 <技能目录>/scripts/scaffold.py <目标路径> --conf <配置包> --project <项目名> --app <app1> --app <app2>
 ```
 
-脚本输出渲染 manifest 与后续步骤。渲染后自查:退出码 0、无占位符残留(脚本内置检查)。
+脚本输出渲染 manifest 与后续步骤。内置保障:保留名守卫(配置包不得撞 `apps/common/stdkit` 等根目录,业务 app 不得撞 `db/base/tasks` 且查重);`settings_local.py` 自动生成(同 example 占位值,已 gitignore);业务 app 路由自动挂进配置包 urls.py 锚点。渲染后自查:退出码 0、无占位符残留(脚本内置全文件扫描)。
 
 stdkit 基架随模板自带(v1.2.6 快照):逐字拷入项目根 `stdkit/` 并随项目仓库分发(克隆即得,不依赖私服安装);传递依赖固化在 requirements.txt 末段;pre-commit 对其只查不改,保持与模板字节一致。用户明确不要时传 `--no-stdkit`。
 
@@ -51,12 +51,17 @@ stdkit 基架随模板自带(v1.2.6 快照):逐字拷入项目根 `stdkit/` 并�
 
 ```bash
 python3.12 -m venv .venv && make install-dev
-cp <配置包>/settings_local.example.py <配置包>/settings_local.py
 .venv/bin/python manage.py check
-make migrate && make dev   # 起服务验证 /api/v1/base/config 返回
+make migrate && make dev
+# 冒烟:免认证 GET /api/v1/base/config 返回 200 JSON 信封;
+#      无 token GET /api/v1/<业务app>/demo 返回 401(验证 JWT 中间件正向拦截)
 ```
 
-未获授权时,停在静态验证(py_compile 全部 .py 含 `stdkit/` + `bash -n scripts/local_quality_gate.sh`),并在交付报告中明确列为阻塞项。
+未获授权时,停在静态验证(py_compile 全部 .py 含 `stdkit/` + `bash -n scripts/local_quality_gate.sh` + `bash -n scripts/git-hooks/pre-push`),并在交付报告中明确列为阻塞项。
+
+### 5b. 默认安装测试沙盒(交接 django-test-sandbox)
+
+轨道 A(nodb)开箱即用;轨道 B(`@pytest.mark.django_db`)因基线 `Configs.value` 为 ArrayField 在 sqlite 失败——**默认按 django-test-sandbox 技能流程安装沙盒**(盘点 PG 字段 → 落四文件 → 跑探针 → AGENTS.md 三区声明)。该技能不可用时,明确报告轨道 B 受限及原因,不悄悄降级。
 
 ### 6. 交付报告
 
@@ -72,8 +77,10 @@ make migrate && make dev   # 起服务验证 /api/v1/base/config 返回
 
 ## 质量标准
 
-- scaffold.py 退出码 0,内置占位符残留检查通过,渲染产物全部 `py_compile` 通过(含 `stdkit/` 全部源码)。
+- scaffold.py 退出码 0,内置占位符残留检查(全文件含 Makefile 等无后缀文件)通过,渲染产物全部 `py_compile` 通过(含 `stdkit/`)。
+- 保留名守卫生效:`--conf common`、`--app db`、重复 app 均被拒绝且退出码 2。
 - `stdkit/` 存在、与模板逐字一致、且未被 .gitignore 排除(随仓库分发);requirements.txt 末段含 stdkit 传递依赖。
-- 目标目录策略验证:非空目标被拒绝,已有文件不被覆盖。
-- 若执行了运行时验证:`manage.py check` 通过、`/api/v1/base/config` 可访问。
+- `make install-hooks` 可执行:scripts/git-hooks/pre-push 存在且 `bash -n` 通过。
+- settings_local.py 自动生成,pytest 无需手工前置步骤即可跑轨道 A。
+- 若执行了运行时验证:`manage.py check` 通过、`/api/v1/base/config` 200、受保护路由无 token 401。
 - 交付报告六要素齐全(文件数/路径、git 与 AGENTS.md 处置、验证证据、阻塞项、下一步)。

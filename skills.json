@@ -175,6 +175,7 @@
         "templates/root/release.Dockerfile",
         "templates/root/requirements-dev.txt",
         "templates/root/requirements.txt",
+        "templates/root/scripts/git-hooks/pre-push",
         "templates/root/scripts/local_quality_gate.sh",
         "templates/stdkit/__init__.py",
         "templates/stdkit/db/__init__.py",

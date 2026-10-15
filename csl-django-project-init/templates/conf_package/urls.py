@@ -10,6 +10,7 @@ from django.views.static import serve
 urlpatterns = [
     re_path(r"^api/v1/base/", include("apps.base.urls")),
     re_path(r"^api/v1/task/", include("apps.tasks.urls")),
+    # 业务 app 路由(scaffold 按需追加在这行下面)
 ]
 
 urlpatterns += [

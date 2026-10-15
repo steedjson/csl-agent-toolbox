@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `<conf>/settings.py` | `backend/settings.py` | 去 raven_compat/sorl INSTALLED_APPS 与业务 app;密钥换占位值;保留 stdkit 中间件链/DRF/JWT/日志分层 |
 | `<conf>/settings_local.example.py` | `backend/settings_local.example.py` | 去 QYWX/DINGTALK/PHEKDA/CRM 业务配置,留追加位 |
-| `<conf>/settings_test.py` | (新增最小版) | sqlite :memory: + locmem 缓存;完整 PG 垫片由 django-test-sandbox 技能安装 |
+| `<conf>/settings_test.py` | (新增最小版) | sqlite :memory: + locmem 缓存;轨道 B 因基线 ArrayField 受限,默认交接 django-test-sandbox 安装完整垫片(其 settings_test 会覆盖本文件) |
 | `<conf>/urls.py` | `backend/urls.py` | 只挂 base/tasks;业务路由随 app 增加 |
 | `common/views.py` | `common/views.py` | 保留 View/ExportBaseView/admin_validator;去 CRMView/crm_admin_validator(CRM 集成) |
 | `common/services.py` | `common/services.py` | 只留 BaseService 核心(tenant_id 解析/get_configs)+ DataService;去 CRM name-wrap 方法与菜单树 |
@@ -20,7 +20,8 @@
 | `apps/tasks/` | `apps/tasks/` | 骨架:apps.py + 空 urls + jobs.py 示例;业务任务随业务加 |
 | `Makefile` + `scripts/local_quality_gate.sh` | 同名文件 | 镜像名参数化;质量门禁逐字保留(format/lint/check/verify/full) |
 | `pyproject.toml` / `pytest.ini` / `.pre-commit-config.yaml` / `.editorconfig` | 同名文件 | known_first_party/DJANGO_SETTINGS_MODULE 参数化,其余一致 |
-| `requirements*.txt` | 同名文件 | stdkit git 依赖行已移除;其传递依赖(v1.2.6 pyproject 全集,去重后 13 项)固化在末段 |
+| `requirements*.txt` | 同名文件 | 三段式:核心链路(E3 实测子集)→ stdkit git 依赖已移除、其传递依赖(v1.2.6 pyproject 全集,去重后 13 项,钉版与 stdkit 对齐)→ 按需启用段(weasyprint/sorl/chinesecalendar 等,默认注释) |
+| `scripts/git-hooks/pre-push` | wework 同名文件 | 逐字保留(只检查待推送提交的 whitespace,不含业务);`make install-hooks` 依赖它 |
 | `stdkit/` | `~/Obj/stdlib/stdkit/src/stdkit`(v1.2.6 快照) | **进技能模板随基架分发**(`templates/stdkit/`),渲染时逐字拷入项目根、不做占位符替换;随项目仓库入库(克隆即得,不依赖私服安装),pre-commit 对其只查不改;`.zcodeignore` 排除以省 agent 上下文;升级方式见下方演进约定 |
 | `Dockerfile` / `release.Dockerfile` / `compiler.py` | 同名文件 | 逐字保留(Cython 编译发布链) |
 | `docs/` + 根 `AGENTS.md` + `README.md` | wework 对应文档 | 按脚手架事实重写的骨架 |

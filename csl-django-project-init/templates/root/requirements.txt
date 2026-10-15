@@ -1,5 +1,6 @@
 # stdkit 以源码基架内嵌于项目根 stdkit/(来自 csl-django-project-init 模板快照 v1.2.6,随仓库分发)。
-# 其传递依赖在下方末段显式列出;升级 stdkit 模板时必须同步该段。
+# 分三段:核心链路(已 E3 实测:check/migrate/serve/上传配置接口)→ stdkit 传递依赖(与 stdkit
+# pyproject 同步,升级模板时必须同步)→ 按需启用(默认注释,用到再放开)。
 PyJWT>=2.10.1
 django-redis==5.4.0
 psycopg[binary]==3.1.16
@@ -7,22 +8,15 @@ bcrypt==4.1.3
 redis==5.1.0b1
 hiredis==3.3.0
 cryptography==46.0.7
-sorl-thumbnail==12.10.0
 requests
-openpyxl
-python-dateutil
-weasyprint>=62,<69
+openpyxl==3.1.2
+python-dateutil==2.9.0.post0
 pypinyin==0.51.0
 gunicorn[gthread]==23.0.0
-jsonpath-ng==1.6.1
 jsonschema==4.26.0
 croniter==2.0.5
-pycryptodome==3.20.0
 simplejson==3.20.1
 django-dirtyfields==1.9.3
-chinesecalendar>=1.11.0
-xlrd>=1.2.0
-xlwt>=1.3.0
 # ---- stdkit/ 内嵌基架的传递依赖(来源:stdkit v1.2.6 pyproject.toml)----
 Django==4.2.16
 djangorestframework==3.14.0
@@ -37,3 +31,11 @@ aliyun-python-sdk-core==2.16.0
 aliyun-python-sdk-dysmsapi==2.1.2
 django-q2==1.7.6
 geopy
+# ---- 按需启用(用到对应能力再放开注释)----
+# weasyprint>=62,<69      # PDF 生成;macOS 需先 brew 装 pango(Dockerfile 已含 apt 安装)
+# sorl-thumbnail==12.10.0 # 图片缩略图(需在 INSTALLED_APPS 启用)
+# chinesecalendar>=1.11.0 # 工作日/节假日计算
+# jsonpath-ng==1.6.1      # JSONPath 查询
+# pycryptodome==3.20.0    # 加解密
+# xlrd>=1.2.0             # 旧版 xls 读取
+# xlwt>=1.3.0             # 旧版 xls 写出
