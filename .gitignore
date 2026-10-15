@@ -3,7 +3,6 @@
 __pycache__/
 .claude/settings.local.json
 .codegraph/
-.wolf/
 .claude/
 .codebuddy/
 .lh-harness/
