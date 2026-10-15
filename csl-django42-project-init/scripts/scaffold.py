@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""确定性 Django 项目脚手架渲染器(csl-django-project-init 技能附属)。
+"""确定性 Django 项目脚手架渲染器(csl-django42-project-init 技能附属)。
 
 将技能 templates/ 下的脱敏基线(wework/backend + stdkit v1.2.6 提炼)渲染到目标目录:
 - 替换占位符 __CONF_PACKAGE__ / __TABLE_PREFIX__ / __PROJECT_NAME__ / __APP_NAME__ / __APP_CLASS__;

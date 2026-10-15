@@ -1,6 +1,6 @@
 repos:
   # 1. 使用项目 .venv 中的统一版本执行 Python 格式化和静态检查
-  #    stdkit/ 为内嵌基架(须与 csl-django-project-init 模板字节一致),不参与格式化与 lint
+  #    stdkit/ 为内嵌基架(须与 csl-django42-project-init 模板字节一致),不参与格式化与 lint
   - repo: local
     hooks:
       - id: isort

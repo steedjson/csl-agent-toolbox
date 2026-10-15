@@ -111,7 +111,7 @@
       ]
     },
     {
-      "name": "csl-django-project-init",
+      "name": "csl-django42-project-init",
       "category": "framework-workflows",
       "description": "Scaffold a new Django backend from the personal baseline distilled from wework/backend plus vendored stdkit source (v1.2.6 snapshot at project root): familiar apps/+common/+conf layout, View/Service/JWT-middleware base stack, uuid+soft-delete model conventions, Makefile quality gates, docs and AGENTS.md skeleton, plus on-demand business app skeletons via a deterministic renderer",
       "files": [

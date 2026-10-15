@@ -1,4 +1,4 @@
-# stdkit 以源码基架内嵌于项目根 stdkit/(来自 csl-django-project-init 模板快照 v1.2.6,随仓库分发)。
+# stdkit 以源码基架内嵌于项目根 stdkit/(来自 csl-django42-project-init 模板快照 v1.2.6,随仓库分发)。
 # 分三段:核心链路(已 E3 实测:check/migrate/serve/上传配置接口)→ stdkit 传递依赖(与 stdkit
 # pyproject 同步,升级模板时必须同步)→ 按需启用(默认注释,用到再放开)。
 PyJWT>=2.10.1

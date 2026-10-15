@@ -30,7 +30,7 @@ make verify TEST=<focused target>
 
 ## 项目约定
 
-- 技术栈：Django 4.2、Python 3.12、PostgreSQL、Redis、Django-Q、DRF 风格视图，以及私有基础库 `stdkit`（源码基架内嵌于根目录 `stdkit/`，随仓库分发、克隆即得，不依赖私服安装；传递依赖已列在 requirements.txt 末段）。`stdkit/` 不参与格式化与 lint（pre-commit 已排除），修改需回 csl-django-project-init 技能模板同步。
+- 技术栈：Django 4.2、Python 3.12、PostgreSQL、Redis、Django-Q、DRF 风格视图，以及私有基础库 `stdkit`（源码基架内嵌于根目录 `stdkit/`，随仓库分发、克隆即得，不依赖私服安装；传递依赖已列在 requirements.txt 末段）。`stdkit/` 不参与格式化与 lint（pre-commit 已排除），修改需回 csl-django42-project-init 技能模板同步。
 - 业务应用位于 `apps/`，共享工具位于 `common/`，Django 配置位于 `__CONF_PACKAGE__/`。
 - apps/ 应用地图：`db`（模型基座与共享模型）、`base`（登录态相关基础能力：上传/配置/任务结果）、`tasks`（Django-Q 异步任务，由 qcluster 执行）。
 - `__CONF_PACKAGE__/settings_local.py` 保存数据库/Redis 等敏感配置且不入库，首次开发需自行创建；连不上数据库或 Redis 时先检查它。
