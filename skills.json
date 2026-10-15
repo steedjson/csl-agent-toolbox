@@ -97,6 +97,20 @@
       ]
     },
     {
+      "name": "django-test-sandbox",
+      "category": "framework-workflows",
+      "description": "Install a battle-tested Django in-memory test sandbox (SQLite :memory:, no migrations, PG field shims, probe gate) into a target Django project and verify it end to end",
+      "files": [
+        "SKILL.md",
+        "templates/conftest.py",
+        "templates/manage_test_override.py.tpl",
+        "templates/pytest.ini.tpl",
+        "templates/settings_test.py.tpl",
+        "templates/test_sandbox_probes.py.tpl",
+        "runs/2026-10-15-phekda.md"
+      ]
+    },
+    {
       "name": "coding-discipline",
       "category": "code-quality",
       "description": "Concise, evidence-driven engineering workflow for minimal changes, explicit tradeoffs, root-cause fixes, and proportional verification",

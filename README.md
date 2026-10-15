@@ -67,6 +67,10 @@
 
 按个人工程规范处理 Django 新项目、旧项目修改和渐进式规范迁移；以 `sugon-webwork-backend` 作为个人习惯参考项目。
 
+#### [django-test-sandbox](./django-test-sandbox/)
+
+给 Django 项目落地实测验证过的内存测试沙盒（SQLite `:memory:` + 禁迁移 + PG 字段建表垫片 + 探针门禁）：纯逻辑测试不连库，ORM 查询语义测试在内存 SQLite 真实执行；含可选的 `manage.py test` 入口接管模板。已在 Django 4.2.16 + pytest-django 4.9 + pytest 8.3 实测（2026-10，phekda 首跑）。
+
 ### 代码质量（code-quality）
 
 #### [thermo-nuclear-code-quality-review](./thermo-nuclear-code-quality-review/)
