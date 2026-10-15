@@ -129,6 +129,14 @@
       ]
     },
     {
+      "name": "csl-xiaopiu-design-draft-capture",
+      "category": "browser-and-ui",
+      "description": "将 xiaopiu（小PIU）原型项目的全部或指定页面导出为本地完整设计稿截图（每页一张、无接缝、含页面树 manifest），供设计稿走查与 UI 审查子智能体按图识读",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
       "name": "ln-install-skill",
       "category": "skill-management",
       "description": "Install, list, verify, or uninstall agent skills via symlinks between a local source directory and any host skills directory — DSH, Claude Code, pi, cross-tool, or project-local (default SRC ~/.cc-switch/skills, DST user-specified or auto-probed)",
@@ -174,6 +182,16 @@
         "references/optical-correction.md",
         "references/golden-family.md",
         "references/cases.md",
+        "examples/behavior-prompts.md"
+      ]
+    },
+    {
+      "name": "dev-effort-estimator",
+      "category": "engineering-planning",
+      "description": "Language-agnostic development effort estimation: WBS decomposition, S/M/L/XL complexity bands, explicit adjustment factors, P50/P80 ranges with assumptions, risks, and calibration",
+      "files": [
+        "SKILL.md",
+        "references/estimation-basis.md",
         "examples/behavior-prompts.md"
       ]
     }

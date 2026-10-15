@@ -77,7 +77,17 @@
 
 把 Gist 中的工程准则转成 Codex 可调用 Skill：面向非琐碎或高风险实现，先理解真实流程，再做最小精准修改；对重要取舍显式说明；修复根因并按风险验证。含三条行为反测 prompt，不替代框架工作流或专门代码审查。
 
+### 工程规划（engineering-planning）
+
+#### [dev-effort-estimator](./dev-effort-estimator/)
+
+把开发任务、文字需求、原型页或 UI 设计稿拆解成可核查的工时评估：WBS 任务分解（0.5–2 人日粒度）、S/M/L/XL 复杂度定档、显式调整因子（熟悉度/耦合/质量/清晰度/协作）、P50/P80 区间输出，附假设清单、Top 风险与收敛建议。原型/设计稿输入时先经 `browser-ui-reader` 转结构化需求清单再估算。方法与编程语言无关，技术栈只作为熟悉度因子进入估算；支持历史 actual 校准。不替代项目管理工具，估算非承诺。
+
 ### 浏览器与 UI（browser-and-ui）
+
+#### [csl-xiaopiu-design-draft-capture](./csl-xiaopiu-design-draft-capture/)
+
+把 xiaopiu（小PIU）原型项目导出为本地完整设计稿截图：每页一张 PNG、整画布无接缝（画布平铺一次成像，禁滚动拼接），并产出映射页面树身份的 `manifest.json`（页面 ID 即原型树节点 key，供交互式审查员跳回原型的导航键）。内置虚拟滚动 SPA 的硬约束剧本（点树切页、内联样式压制、兄弟页副本隐藏、视口上限适配）。产物是设计稿走查与 UI 审查子智能体的标准输入；通用网页截图不在范围内。
 
 #### [browser-ui-reader](./browser-ui-reader/)
 
@@ -201,6 +211,8 @@ my-skills/
 │   ├── SKILL.md
 │   ├── scripts/
 │   └── references/
+├── csl-xiaopiu-design-draft-capture/
+│   └── SKILL.md
 ├── ln-install-skill/
 │   └── SKILL.md
 ├── grok-build-cli/
