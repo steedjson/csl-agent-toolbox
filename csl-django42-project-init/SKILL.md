@@ -35,7 +35,7 @@ description: 按个人 Django 4.2 基线(钉 Django 4.2.16 + stdkit v1.2.6,提�
 python3 <技能目录>/scripts/scaffold.py <目标路径> --conf <配置包> --project <项目名> --app <app1> --app <app2>
 ```
 
-脚本输出渲染 manifest 与后续步骤。内置保障:保留名守卫(配置包不得撞 `apps/common/stdkit` 等根目录,业务 app 不得撞 `db/base/tasks` 且查重);`settings_local.py` 自动生成(同 example 占位值,已 gitignore);业务 app 路由自动挂进配置包 urls.py 锚点。渲染后自查:退出码 0、无占位符残留(脚本内置全文件扫描)。
+脚本输出渲染 manifest 与后续步骤。内置保障:保留名守卫(配置包不得撞 `apps/common/stdkit` 等根目录,业务 app 不得撞 `db/base/tasks` 且查重);`settings_local.py` 自动生成(同 example 占位值,已 gitignore);业务 app 路由自动挂进配置包 urls.py 锚点**并自动注册进 INSTALLED_APPS**(漏注册则 makemigrations 无视其模型)。渲染后自查:退出码 0、无占位符残留(脚本内置全文件扫描)。
 
 stdkit 基架随模板自带(v1.2.6 快照):逐字拷入项目根 `stdkit/` 并随项目仓库分发(克隆即得,不依赖私服安装);传递依赖固化在 requirements.txt 末段;pre-commit 对其只查不改,保持与模板字节一致。用户明确不要时传 `--no-stdkit`。
 
@@ -82,5 +82,5 @@ make migrate && make dev
 - `stdkit/` 存在、与模板逐字一致、且未被 .gitignore 排除(随仓库分发);requirements.txt 末段含 stdkit 传递依赖。
 - `make install-hooks` 可执行:scripts/git-hooks/pre-push 存在且 `bash -n` 通过。
 - settings_local.py 自动生成,pytest 无需手工前置步骤即可跑轨道 A。
-- 若执行了运行时验证:`manage.py check` 通过、`/api/v1/base/config` 200、受保护路由无 token 401。
+- 若执行了运行时验证:`manage.py check` 通过、`/api/v1/base/config` 200、受保护路由无 token 401、`makemigrations` 能看到业务 app 的模型(INSTALLED_APPS 注册生效)。
 - 交付报告六要素齐全(文件数/路径、git 与 AGENTS.md 处置、验证证据、阻塞项、下一步)。

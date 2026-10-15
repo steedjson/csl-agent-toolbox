@@ -121,7 +121,8 @@ class BigUploadViews(View):
         - chunk_md5: 分片MD5值（可选，用于校验）
         """
         try:
-            user_id = self.request.user_id
+            # 匿名可达端点:user_id 未注入时落 anonymous 桶,分片本身按 task_id 隔离
+            user_id = getattr(self.request, "user_id", None) or "anonymous"
             upload_file = request.FILES.get("file")
 
             if not upload_file:
@@ -176,7 +177,8 @@ class BigUploadViews(View):
         - chunk_md5_list: 各分片MD5列表（可选，用于分片验证）
         """
         try:
-            user_id = self.request.user_id
+            # 匿名可达端点:user_id 未注入时落 anonymous 桶,分片本身按 task_id 隔离
+            user_id = getattr(self.request, "user_id", None) or "anonymous"
             task_id = request.data.get("task_id")
             file_name = request.data.get("filename", "")
             try:

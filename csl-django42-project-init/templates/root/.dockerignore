@@ -25,3 +25,9 @@ htmlcov/
 .vscode/
 *.swp
 *.swo
+
+# Runtime data and logs (avoid baking local db/media/logs into images)
+db.sqlite3
+logs/
+media/
+exports/

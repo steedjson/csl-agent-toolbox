@@ -16,28 +16,34 @@ from apps.db.models import Admin
 logger = logging.getLogger("django")
 
 
+def _is_miss_token_path(path: str) -> bool:
+    """免认证路径按段精确匹配:/statics 放行 /statics 与 /statics/...,但不放行 /statics-evil。"""
+    for miss_path in settings.MISS_TOKEN_PATHS:
+        normalized = miss_path.rstrip("/")
+        if path == normalized or path.startswith(normalized + "/"):
+            return True
+    return False
+
+
 class RequestMiddleware(object):
-    err = {"error": "", "code": 500, "msg": "", "data": None}
-    verification_auth = False
+    """JWT 认证与统一异常响应。
+
+    并发约束:中间件实例跨请求共享,判定状态一律用请求内局部变量,
+    禁止写 self(gunicorn 线程并发下会串改)。
+    """
 
     def __init__(self, get_response):
         self.get_response = get_response
         # One-time configuration and initialization.
 
     def __call__(self, request):
-        # Code to be executed for each request before the view is called.
         func, args, kwargs = resolve(request.path)
+        verification_auth = False
         if hasattr(func, "view_class") and hasattr(func.view_class, "verification_auth"):
-            self.verification_auth = func.view_class.verification_auth
-        for path in settings.MISS_TOKEN_PATHS:
-            if request.path.startswith(path):
-                self.verification_auth = False
-        if self.verification_auth:
-            try:
-                self.verification_auth = func.view_class.verification_auth
-            except:
-                return self.build_login_error("无法获取verification_auth参数")
-        if self.verification_auth:
+            verification_auth = func.view_class.verification_auth
+        if _is_miss_token_path(request.path):
+            verification_auth = False
+        if verification_auth:
             rs = self.admin_validate(request)
             if isinstance(rs, HttpResponse):
                 return rs
@@ -89,7 +95,7 @@ class RequestMiddleware(object):
             payload = jwt.decode(encoded_jwt, settings.JWT_SECRET, algorithms=["HS256"])
         except ExpiredSignatureError:
             return self.build_login_error("登录失效2")
-        except:
+        except Exception:
             return self.build_login_error("登录失效3")
         user_id = payload.get("user_id", "")
         if not user_id:
@@ -127,10 +133,9 @@ class RequestMiddleware(object):
         return payload
 
     def build_login_error(self, msg):
-        self.err["msg"] = msg
-        self.err["code"] = 401
+        err = {"error": "", "code": 401, "msg": msg, "data": None}
         return HttpResponse(
-            json.dumps(self.err),
+            json.dumps(err),
             content_type="application/json",
             status=401,
         )

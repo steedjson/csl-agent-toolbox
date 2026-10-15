@@ -2,6 +2,22 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-15][csl-django42-project-init] 基线漏配 CACHES:redis 只喂了 Q_CLUSTER,缓存落回进程内 LocMem
+- 现象: 基线 requirements 带 django-redis/redis/hiredis 但无任何 CACHES 配置;运行时 Django 隐式落 LocMemCache——多 worker 下 JWT 会话/导出防重/任务进度互不可见,重启即丢
+- 根因: wework 的 CACHES 只活在未入库的 settings_local.py(_dev/_local 同),入库 example 只定义 REDIS_HOST/PORT 喂 Q_CLUSTER;提炼模板只读入库文件,洞被原样继承
+- 修法: settings_local.example 补参数化 CACHES(LOCATION 接 REDIS_HOST/PORT,KEY_PREFIX 按 环境_项目_api_,PASSWORD 注释位);settings_test 维持 locmem 覆盖,测试不碰 redis
+- 关联: csl-django42-project-init/templates/conf_package/settings_local.example.py
+- 复发: 1 次 · 最近 2026-10-15
+- 教训: 从存量项目提炼配置模板,未入库的本地覆盖文件也是"事实上的配置面"——入库 example 里定义而无人消费的变量(REDIS_HOST 只喂 Q_CLUSTER)是漏配的信号
+
+## [2026-10-15][csl-django42-project-init] 基线模板三处继承缺陷:业务 app 漏注册/分片上传必炸/认证中间件线程不安全
+- 现象: ① `--app demo` 渲染后 urls 已挂载但 INSTALLED_APPS 无 `apps.demo`,业务 app 写首个模型时 makemigrations 静默无视;② POST/PUT `/api/v1/base/bigupload/*` 每次必返回"分片上传失败: ...no attribute 'user_id'";③ 认证中间件 `self.verification_auth`/`self.err` 为跨请求共享实例状态,线程并发下受保护判定与 401 报文可串改;MISS_TOKEN_PATHS 用 startswith 前缀匹配,`/statics` 前缀的未来路由被静默免认证
+- 根因: ① scaffold 只挂 urls 不写 settings;② 匿名端点(verification_auth=False)读 `self.request.user_id`,而该属性仅认证分支注入(wework 同构继承);③ wework 中间件以实例属性承载请求级状态 + startswith 前缀匹配(wework 同构继承)
+- 修法: ① settings.py 模板加锚点,scaffold `register_apps_in_settings` 追加;② `getattr(request,"user_id",None) or "anonymous"` 兜底,分片按 task_id 隔离;③ 判定状态改请求内局部变量、错误体局部构造,路径匹配改段级精确(`^/statics(/|$)`)
+- 关联: csl-django42-project-init/templates/{conf_package/settings.py,apps/base/views/base.py,common/middlewares/request.py} + scripts/scaffold.py
+- 复发: 1 次 · 最近 2026-10-15
+- 教训: 从存量项目提炼模板,保真裁剪之外必须过一遍"继承缺陷"清单(共享状态/前缀匹配/属性注入假设),wework 能跑不等于该路径真被用过
+
 <!-- wolf:bug-004 -->
 ## [2026-08-21][external] Claude Code 回复被渲染成逐碎片换行（每几个字符一行，thinking 块交替插入），用户称'无脑换行'
 - 现象: Claude Code 回复被渲染成逐碎片换行（每几个字符一行，thinking 块交替插入），用户称'无脑换行'

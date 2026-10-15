@@ -105,6 +105,21 @@ def mount_app_urls(conf: str, apps_to_mount: list, target: Path) -> None:
     urls_path.write_text(content, encoding="utf-8")
 
 
+def register_apps_in_settings(conf: str, apps_to_register: list, target: Path) -> None:
+    """把业务 app 写进配置包 settings.py 的 INSTALLED_APPS 锚点后——漏注册则 makemigrations 无视其模型。"""
+    if not apps_to_register:
+        return
+    settings_path = target / conf / "settings.py"
+    content = settings_path.read_text(encoding="utf-8")
+    marker = "    # 业务 app 注册(scaffold 按需追加在这行下面)"
+    if marker not in content:
+        print(f"警告:{settings_path} 缺少业务 app 注册锚点,需手工加入 INSTALLED_APPS", file=sys.stderr)
+        return
+    lines = [f'    "apps.{app}",' for app in apps_to_register]
+    content = content.replace(marker, marker + "\n" + "\n".join(lines))
+    settings_path.write_text(content, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="按 wework/backend 基线渲染 Django 项目骨架")
     parser.add_argument("target", help="目标项目目录(必须不存在或为空)")
@@ -172,13 +187,14 @@ def main() -> int:
     copy_tree_rendered(TEMPLATES / "common", target / "common", ctx, written, set())
     copy_tree_rendered(TEMPLATES / "apps", target / "apps", ctx, written, set())
 
-    # 业务 app 骨架 + 路由自动挂载
+    # 业务 app 骨架:路由自动挂载 + INSTALLED_APPS 自动注册
     for app in args.app:
         app_ctx = dict(ctx)
         app_ctx["__APP_NAME__"] = app
         app_ctx["__APP_CLASS__"] = app_class_name(app)
         copy_tree_rendered(TEMPLATES / "app_skeleton", target / "apps" / app, app_ctx, written, set())
     mount_app_urls(args.conf, args.app, target)
+    register_apps_in_settings(args.conf, args.app, target)
 
     # settings_local.py 开箱即用(已在 .gitignore,内容全是环境占位值)
     local_settings = target / args.conf / "settings_local.py"

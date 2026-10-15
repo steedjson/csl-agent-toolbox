@@ -18,6 +18,7 @@ SECRET_KEY = "change-me-in-settings-local"  # pragma: allowlist secret
 
 DEBUG = False
 
+# 基线宽松默认;各环境在 settings_local.py 里按实际收紧
 ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
@@ -29,10 +30,12 @@ INSTALLED_APPS = [
     "apps.db",
     "apps.base",
     "apps.tasks",
+    # 业务 app 注册(scaffold 按需追加在这行下面)
 ]
 
+# JWT-only 栈:认证统一由 common.middlewares.request 处理,不用 session,DRF 侧
+# 显式关闭默认 SessionAuth,防止将来视图访问 request.user 时触发不存在的 sessions 表。
 MIDDLEWARE = [
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "common.middlewares.request.RequestMiddleware",
@@ -60,6 +63,7 @@ TIME_ZONE = "Asia/Chongqing"
 
 USE_I18N = True
 
+# 沿用 wework 惯性:naive 本地时间直接存库;切 USE_TZ=True 属全局改造,勿顺手改
 USE_TZ = False
 
 STATIC_URL = "/statics/"
@@ -76,6 +80,7 @@ REST_FRAMEWORK = {
     "DATE_FORMAT": "%Y-%m-%d",
     "DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
     "PAGINATE_BY_PARAM": "page_size",
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
 }
 JWT_SECRET = "change-me-in-settings-local"  # pragma: allowlist secret
 

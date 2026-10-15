@@ -18,7 +18,8 @@ class BaseService(StdKitBaseService):
     def get_tenant_id(self):
         if self.tenant_id:
             return self.tenant_id
-        return Tenant.objects.order_by('add_datetime').first().uuid if Tenant.objects.exists() else None
+        tenant = Tenant.objects.order_by("add_datetime").first()
+        return tenant.uuid if tenant else None
 
     def get_configs(self, tenant_id, config_type_tag, tag):
         config_type = ConfigType.objects.filter(tenant_id=tenant_id, tag=config_type_tag).first()

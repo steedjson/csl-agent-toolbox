@@ -80,7 +80,7 @@ class Configs(DirtyFieldsMixin, models.Model):
     )
     name = models.CharField(db_comment="名称", max_length=30, default="")
     tag = models.CharField(db_comment="唯一标识", max_length=30, default="")
-    value = ArrayField(JSONField(db_comment="选项信息"), db_comment="选项", default=None)  # [{"": ""}]
+    value = ArrayField(JSONField(db_comment="选项信息"), db_comment="选项", default=None, null=True, blank=True)  # [{"": ""}]
     enabled = models.BooleanField(db_comment="是否启用", default=True)
 
     def __str__(self):
@@ -124,7 +124,7 @@ class Admin(DirtyFieldsMixin, models.Model):
     username = models.CharField(db_comment="用户名", max_length=100, default="", db_index=True)
     password = models.CharField(db_comment="密码", max_length=80, default="")
     nickname = models.CharField(db_comment="昵称", max_length=100, default="")
-    avatar = models.CharField(db_comment="头像", max_length=100, default="/statics/images/avatar.png")
+    avatar = models.CharField(db_comment="头像", max_length=100, default="")
     mobile = models.CharField(db_comment="手机号", max_length=20, default="")
     email = models.CharField(db_comment="邮箱", max_length=60, default="")
     enabled = models.BooleanField(db_comment="是否启用", default=True)

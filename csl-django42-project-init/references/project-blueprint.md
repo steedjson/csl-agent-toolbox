@@ -6,17 +6,17 @@
 
 | 模板产物 | 参考源 | 裁剪说明 |
 | --- | --- | --- |
-| `<conf>/settings.py` | `backend/settings.py` | 去 raven_compat/sorl INSTALLED_APPS 与业务 app;密钥换占位值;保留 stdkit 中间件链/DRF/JWT/日志分层 |
-| `<conf>/settings_local.example.py` | `backend/settings_local.example.py` | 去 QYWX/DINGTALK/PHEKDA/CRM 业务配置,留追加位 |
+| `<conf>/settings.py` | `backend/settings.py` | 去 raven_compat/sorl INSTALLED_APPS 与业务 app;密钥换占位值;保留 stdkit 中间件链/DRF/JWT/日志分层。**基线修正**:去 SessionMiddleware(无 sessions app 的死重)、DRF 显式 `DEFAULT_AUTHENTICATION_CLASSES=[]`(认证归中间件)、INSTALLED_APPS 留业务 app 注册锚点 |
+| `<conf>/settings_local.example.py` | `backend/settings_local.example.py` | 去 QYWX/DINGTALK/PHEKDA/CRM 业务配置,留追加位;补 REQUEST_BODY_CACHE_CONFIG 示例(stdkit 请求体缓存默认只认 /api/v1/admin/,新项目需按路由前缀重配)。**基线补漏**:CACHES(django-redis)——wework 该块只活在未入库的真实 settings_local.py,example 从未携带,基线补回并参数化 KEY_PREFIX(环境_项目_api_) |
 | `<conf>/settings_test.py` | (新增最小版) | sqlite :memory: + locmem 缓存;轨道 B 因基线 ArrayField 受限,默认交接 django-test-sandbox 安装完整垫片(其 settings_test 会覆盖本文件) |
-| `<conf>/urls.py` | `backend/urls.py` | 只挂 base/tasks;业务路由随 app 增加 |
-| `common/views.py` | `common/views.py` | 保留 View/ExportBaseView/admin_validator;去 CRMView/crm_admin_validator(CRM 集成) |
-| `common/services.py` | `common/services.py` | 只留 BaseService 核心(tenant_id 解析/get_configs)+ DataService;去 CRM name-wrap 方法与菜单树 |
-| `common/middlewares/request.py` | `common/middlewares/request.py` | 保留 JWT admin 认证 + 会话重建 + 统一异常响应;去 up_center 统一认证与 crm_validate |
+| `<conf>/urls.py` | `backend/urls.py` | 只挂 base/tasks;业务路由随 app 增加(锚点) |
+| `common/views.py` | `common/views.py` | 保留 View/ExportBaseView/admin_validator;去 CRMView/crm_admin_validator(CRM 集成)。**基线修正**:LOCAL=True 同步导出改为带回 url |
+| `common/services.py` | `common/services.py` | 只留 BaseService 核心(tenant_id 解析/get_configs)+ DataService;去 CRM name-wrap 方法与菜单树。**基线修正**:get_tenant_id 单查询 |
+| `common/middlewares/request.py` | `common/middlewares/request.py` | 保留 JWT admin 认证 + 会话重建 + 统一异常响应;去 up_center 统一认证与 crm_validate。**基线修正**:认证判定与 401 报文改请求内局部变量(原 self 状态线程不安全),MISS_TOKEN_PATHS 改段级精确匹配(原 startswith 前缀绕过),裸 except 收敛 |
 | `common/utils.py` | `common/utils.py` | **逐字保留**(通用工具函数全集) |
-| `apps/db/models.py` | `apps/db/models.py`(6154 行) | 只留基座:Tenant/ConfigType/Configs/Role/Admin/AOperationLog/Demo + 模型约定头注释 |
+| `apps/db/models.py` | `apps/db/models.py`(6154 行) | 只留基座:Tenant/ConfigType/Configs/Role/Admin/AOperationLog/Demo + 模型约定头注释。**基线修正**:Configs.value 补 null=True(default=None 无 null 的脚枪),Admin.avatar 默认改空串(原指向不存在的静态资源) |
 | `apps/db/const.py` | `apps/db/const.py` | 只留 ModelOperatioChoices/OperationType;业务枚举随业务加 |
-| `apps/base/` | `apps/base/` | 保留上传(普通/富文本/分片)/配置/Q任务结果视图;去 Region/Kkfile/Mapqq/缩略图/JsapiTicket/部门用户/承接主体 |
+| `apps/base/` | `apps/base/` | 保留上传(普通/富文本/分片)/配置/Q任务结果视图;去 Region/Kkfile/Mapqq/缩略图/JsapiTicket/部门用户/承接主体。**基线修正**:分片上传 user_id 改 getattr 兜底(原匿名端点读未注入属性必 AttributeError) |
 | `apps/tasks/` | `apps/tasks/` | 骨架:apps.py + 空 urls + jobs.py 示例;业务任务随业务加 |
 | `Makefile` + `scripts/local_quality_gate.sh` | 同名文件 | 镜像名参数化;质量门禁逐字保留(format/lint/check/verify/full) |
 | `pyproject.toml` / `pytest.ini` / `.pre-commit-config.yaml` / `.editorconfig` | 同名文件 | known_first_party/DJANGO_SETTINGS_MODULE 参数化,其余一致 |

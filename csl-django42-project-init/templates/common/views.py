@@ -26,10 +26,10 @@ class ExportBaseView(View):
         parsed_args = self._parse_params(request)
         task_name = self._get_task_name()
 
-        # 本地调试，settings.LOCAL=True
+        # 本地调试，settings.LOCAL=True:同步执行并直接带回导出文件 url
         if getattr(settings, "LOCAL", False):
-            self._run_export(self.__class__, parsed_args, self.sheet_titles, self.params)
-            return JsonResponse.success()
+            result_data = self._run_export(self.__class__, parsed_args, self.sheet_titles, self.params)
+            return JsonResponse.success(result_data)
 
         cache_key = f"{request.user_id}_{task_name}"
         task_id = cache.get(cache_key)

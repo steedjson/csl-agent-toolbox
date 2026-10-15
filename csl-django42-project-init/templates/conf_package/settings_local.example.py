@@ -24,6 +24,23 @@ DATABASES = {
 # Redis 配置
 REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD', '')
+
+# 缓存(django-redis):中间件 JWT 会话、导出防重、异步任务进度都走这里。
+# 多 worker 部署必须共享 Redis——漏配会落到进程内 LocMemCache,状态互不可见且重启即丢。
+# KEY_PREFIX 按 环境_项目_ 拼,多项目共库时避免互踩。
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {'max_connections': 100},
+            # 'PASSWORD': REDIS_PASSWORD,
+        },
+        'KEY_PREFIX': 'dev___PROJECT_NAME___api_',
+    }
+}
 
 # Django-Q 配置
 Q_CLUSTER_TASK = False
@@ -75,3 +92,10 @@ JWT_SECRET = 'local-jwt-secret-change-in-production'  # pragma: allowlist secret
 
 # 第三方服务配置按需追加(本地用空值或 mock):
 # QYWX_CONFIG / DINGTALK_APPKEY / 短信网关 等
+
+# stdkit 请求体缓存(RequestBodyCacheMiddleware)。默认只对 /api/v1/admin/ 前缀生效,
+# 新项目按自己的路由前缀调整,否则该中间件等于常闭:
+REQUEST_BODY_CACHE_CONFIG = {
+    'INCLUDE_PATHS': ['/api/v1/'],
+    'EXCLUDE_PATHS': ['/statics/', '/media/'],
+}
