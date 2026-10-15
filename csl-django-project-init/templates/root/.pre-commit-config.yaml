@@ -1,0 +1,53 @@
+repos:
+  # 1. 使用项目 .venv 中的统一版本执行 Python 格式化和静态检查
+  #    stdkit/ 为内嵌基架(须与 csl-django-project-init 模板字节一致),不参与格式化与 lint
+  - repo: local
+    hooks:
+      - id: isort
+        name: isort
+        entry: .venv/bin/isort
+        language: system
+        types: [python]
+        exclude: 'migrations/|__pycache__|^stdkit/'
+      - id: black
+        name: black
+        entry: .venv/bin/black
+        language: system
+        types: [python]
+        exclude: 'migrations/|__pycache__|^stdkit/'
+      - id: pylint-errors
+        name: pylint (errors only)
+        entry: .venv/bin/python -m pylint
+        language: system
+        types: [python]
+        args:
+          - --errors-only
+          - --score=no
+        exclude: 'migrations/|__pycache__|settings_local|\.example\.py|^stdkit/'
+
+  # 2. 基础文件和语法检查(检查类钩子覆盖 stdkit/,改写类钩子排除以保持基架字节稳定)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        exclude: '^stdkit/'
+      - id: end-of-file-fixer
+        exclude: '^stdkit/'
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        exclude: '^stdkit/'
+      - id: detect-private-key
+      - id: check-ast
+
+  # 3. 通用凭据检查。只扫描本次暂存内容，不处理既有历史。
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        exclude: '(^|/)\.secrets\.baseline$'

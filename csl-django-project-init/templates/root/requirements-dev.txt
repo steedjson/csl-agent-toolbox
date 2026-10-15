@@ -1,0 +1,11 @@
+# 本地开发工具。运行时依赖仍以 requirements.txt 为准。
+# 测试框架与覆盖率(生产镜像不装;make install-dev 会先装 requirements.txt)
+pytest==9.0.3
+pytest-django==4.12.0
+pytest-cov==6.0.0
+black==26.3.0
+isort==8.0.1
+pip-audit==2.10.1
+pre-commit==4.6.0
+pylint==4.0.6
+safety==3.8.1

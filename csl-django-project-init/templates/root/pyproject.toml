@@ -1,0 +1,45 @@
+# 工具配置收拢：Black、isort 和 Pylint 统一到此文件；pytest 使用 pytest.ini。
+# 详细开发规范见 AGENTS.md 与 docs/development/项目规则.md。
+
+[tool.black]
+line-length = 110
+skip-string-normalization = true
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 110
+known_first_party = ["apps", "common", "__CONF_PACKAGE__"]
+
+[tool.pylint]
+# 与 .pylintrc 等价；pyproject 存在时 pylint 优先读取本文件
+[tool.pylint.master]
+# Django 动态生成的属性（误报屏蔽）
+generated-members = [
+    "ForeignKey.*",
+    "DoesNotExist",
+    "_meta",
+    "objects",
+    "objects_all",
+    "get_*_display",
+]
+ignore = ["migrations", ".venv", "node_modules"]
+
+[tool.pylint."messages control"]
+# 禁用 Django 特有的误报警告
+disable = [
+    "no-member",                  # Django 动态属性（ForeignKey.xxx）
+    "import-error",                # 模块导入问题（私有包 stdkit 等）
+    "no-name-in-module",           # 动态导入模块
+    "bad-super-call",              # stdkit BaseService 的 super() 用法
+]
+
+[tool.pylint.typecheck]
+ignored-modules = [
+    "django",
+    "django.db.models",
+    "django.db.models.fields",
+    "stdkit",
+    "stdkit.rest",
+    "stdkit.db",
+]
