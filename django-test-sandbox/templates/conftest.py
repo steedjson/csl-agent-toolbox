@@ -14,6 +14,8 @@
     DJANGO_TEST_SANDBOX=0 pytest --ds=<真实设置模块> --migrations <路径>
 """
 import json
+
+import pytest
 import os
 
 from django.apps import apps
@@ -200,3 +202,56 @@ def pytest_configure(config):
             "DJANGO_TEST_SANDBOX=0 pytest --ds=<真实设置模块> --migrations"
         )
     patch_postgres_storage_for_sqlite()
+
+
+def pytest_collection_modifyitems(config, items):
+    """存量连库测试默认跳过(沙盒模式)。
+
+    适用:apps 下使用 db/django_db 的存量用例(常见于带 autouse db 的
+    目录级 conftest)。全新项目无此类用例时空转,无副作用;nodb 目录
+    (自带 blocker)与根 tests/(轨道 B/探针)不受影响。
+    """
+    if not SANDBOX_ON:
+        return
+    from pathlib import Path
+
+    root_tests = str(Path(__file__).resolve().parent / "tests")
+    skip = pytest.mark.skip(
+        reason=(
+            "存量连库测试,沙盒默认跳过;对真库执行用:"
+            " DJANGO_TEST_SANDBOX=0 python -m pytest"
+            " --ds=<真实设置模块> --migrations <路径>"
+        )
+    )
+    for item in items:
+        fpath = str(item.fspath)
+        if fpath.startswith(root_tests) or "nodb" in set(Path(fpath).parts):
+            continue
+        uses_db = (
+            item.get_closest_marker("django_db") is not None
+            or "db" in item.fixturenames
+            or "transactional_db" in item.fixturenames
+        )
+        if uses_db:
+            item.add_marker(skip)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _restore_create_test_db():
+    """弹掉存量 conftest 留在 connection.creation 实例上的建库短路补丁。
+
+    存量项目常见"跳过测试库创建、直连开发库"的目录级 conftest(在实例上
+    替换 create_test_db/destroy_test_db);沙盒下会导致建表被整体跳过,
+    典型症状是探针单跑绿、混跑红(no such table)。沙盒开:恢复类方法
+    正常建表;沙盒关:不干预,保留直连开发库的既有语义。无补丁时空操作。
+    """
+    if not SANDBOX_ON:
+        yield
+        return
+    from django.db import connections
+
+    for alias in connections:
+        creation = connections[alias].creation
+        creation.__dict__.pop("create_test_db", None)
+        creation.__dict__.pop("destroy_test_db", None)
+    yield

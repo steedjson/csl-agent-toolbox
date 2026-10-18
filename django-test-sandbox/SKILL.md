@@ -19,7 +19,10 @@ description: 把实测验证过的 Django 内存测试沙盒(SQLite :memory: + �
 ### Step 0 前置检查
 
 - `git status --porcelain` 记录脏文件清单(只记录,不处理,汇报时带上);
-- 根目录已有 conftest.py / pytest.ini → 不是零冲突,停下向用户说明合并方案再动;
+- 根目录已有 conftest.py → 停下向用户说明合并方案再动;已有 pytest.ini → 按合并方案处理:保留原有 `python_files`/`markers`/`testpaths` 等项,`DJANGO_SETTINGS_MODULE` 改指测试设置模块,`addopts` 加 `--no-migrations`,`testpaths` 追加根 `tests`;
+- 盘点目录级 conftest 两类危险形态(模板已内置对应防御,此处为确认与告知):
+  - **autouse db 夹具**(如 `enable_db_access(db)`)→ 其下所有用例默认跳过(过滤器接管);
+  - **实例短路 create_test_db**("直连开发库")→ 建表会被跳过,防御夹具在首个测试前弹掉实例补丁;
 - 确认 Django 版本、venv 路径、settings 布局(base 模块、local 覆盖链如何挂载)。
 
 ### Step 1 盘点
@@ -38,9 +41,10 @@ rg -n "__contains|__overlap|SearchVector|ArrayAgg|StringAgg|RawSQL|\.extra\(|sel
 
 模板在 `templates/`,按 `<PLACEHOLDER>` 适配:
 - `settings_test.py.tpl` → 放到 Django settings 包内,`from <BASE>.settings import *` 后覆盖 DATABASES/CACHES/EMAIL/PASSWORD_HASHERS。项目用 celery 才保留 EAGER 两行;用 django-q 的项目删掉 celery 行(q 任务在沙盒里只入队不执行,测试断言入队不断言执行);
-- `conftest.py` → pytest 根,原样落地(项目无关,勿改);
-- `pytest.ini.tpl` → pytest 根,填 DJANGO_SETTINGS_MODULE 为测试设置模块;`testpaths` 只指向沙盒测试区(新建根 `tests/`),存量测试维持原运行方式不收集;
+- `conftest.py` → pytest 根落地,替换跳过原因里唯一的 `<真实设置模块>` 占位符,其余勿改(含五项机制:响亮门禁、字段垫片、实例绑定清理、存量连库跳过过滤器、create_test_db 实例补丁防御;后两项在干净项目空转,无副作用);
+- `pytest.ini.tpl` → pytest 根,填 DJANGO_SETTINGS_MODULE 为测试设置模块;已有 pytest.ini 时按 Step 0 合并方案改写;`testpaths` 指向沙盒测试区(新建根 `tests/` + 原有收集范围);
 - `test_sandbox_probes.py.tpl` → 根 `tests/`,Layer-1 通用照抄,Layer-2 换成 Step 1 选出的真实模型。
+- 建议项:若 Step 0 发现祖先级 autouse db 夹具,提示用户给各 nodb 目录加 `django_db_blocker.block()` 的 autouse 上锁 conftest(wework 范式),防 nodb 用例意外触碰 ORM。
 
 venv 缺 pytest 时:`pip install pytest pytest-django`(pytest-django ≥ 4.3)。
 
@@ -82,8 +86,13 @@ pytest tests/test_sandbox_probes.py -q
 一次安装合格的判定,必须拿到全部三条证据:
 
 1. 探针套件在目标仓库全绿(附结果原文,含耗时);
-2. 存量测试运行方式零影响(原有 manage.py test / 出口命令路径均可用,只打印不执行真库);
+2. 存量测试运行方式零影响或明确跳过:存量连库用例默认显式 skip(带出口命令)属预期行为,须与"沙盒致败"区分;
 3. 交付清单完整:新增文件、AGENTS.md 追加段、Selector Mock 工作清单、脏文件记录、回滚步骤。
+
+失败分流铁律:全量跑出现存量用例失败时,先在真实设置下复跑该用例
+(`DJANGO_TEST_SANDBOX=0 pytest --ds=<真实设置模块> <路径>`,不连库的用例
+不会碰真库)——真实设置下同样失败的,是存量既有问题,如实上报不属于
+本次安装;真实设置下能过、沙盒下挂的,才是沙盒致败,必须修垫片。
 
 回归纪律:Django 大版本升级、新增 PG 字段类型/索引形态、conftest 改动,三者任一发生都必须重跑探针;探针红时严禁通过删探针/弱化断言来恢复绿灯——这条本身就是 checklist 第一项。
 
