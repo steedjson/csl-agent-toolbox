@@ -2,6 +2,14 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-18][xerj] xerj-project 输出被 xerj-service 用法文本污染,且意外暴露 service 命令面
+- 现象: 每次调用 xerj-project(--help/info/search 等),stdout 前置 6 行 xerj-service 用法文本,search --json 的 jq 管道解析被破坏;更严重的是 xerj-project install/update --force 会经 import 副作用真实执行 service 命令,而非走 xerj-project 自己的未知命令拒绝
+- 根因: ~/.bun/bin/xerj-service 顶层 CLI 分发块无 import.meta.main 模块守卫;xerj-project L7 import 该模块取 acquireOperation/scheduleUpdate 时,分发块以宿主 argv 立即执行
+- 修法: 分发块整体包 `if (import.meta.main) {}`;直跑(spawn/shebang)行为不变。实测 --help/info 输出干净、service 直跑 usage/status 正常
+- 关联: ~/.bun/bin/xerj-service:263、~/.bun/bin/xerj-project:7、本仓库 xerj/SKILL.md(镜像)
+- 复发: 1 次 · 最近 2026-10-18
+- 教训: wrapper 三件套(xerj-project/xerj-service/xerj-startup.ts)是 2026-10-18 OMP 会话直写 ~/.bun/bin 的本机自产代码,上游 xerj-org/xerj(Apache-2.0)仓库无这些文件——重新生成时必须带回 import.meta.main 守卫;修复前备份 ~/.bun/bin/xerj-service.bak-20261018
+
 ## [2026-10-15][csl-django42-project-init] 基线漏配 CACHES:redis 只喂了 Q_CLUSTER,缓存落回进程内 LocMem
 - 现象: 基线 requirements 带 django-redis/redis/hiredis 但无任何 CACHES 配置;运行时 Django 隐式落 LocMemCache——多 worker 下 JWT 会话/导出防重/任务进度互不可见,重启即丢
 - 根因: wework 的 CACHES 只活在未入库的 settings_local.py(_dev/_local 同),入库 example 只定义 REDIS_HOST/PORT 喂 Q_CLUSTER;提炼模板只读入库文件,洞被原样继承

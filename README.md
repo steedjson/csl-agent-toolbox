@@ -85,6 +85,12 @@
 
 把 Gist 中的工程准则转成 Codex 可调用 Skill：面向非琐碎或高风险实现，先理解真实流程，再做最小精准修改；对重要取舍显式说明；修复根因并按风险验证。含三条行为反测 prompt，不替代框架工作流或专门代码审查。
 
+### 项目检索（project-search）
+
+#### [xerj](./xerj/)
+
+用本机已安装的 XERJ 服务检索当前项目的索引源码与文档：从目标项目工作目录调用 `xerj-project` wrapper（Git 根绝对路径哈希为独立索引前缀，自动携带端点与鉴权，不打印密钥），支持 `search` / `def` / `query` / `map` / `watch` 等。每个项目独立索引与日志；安装与升级仅限本机 macOS Apple Silicon，官方发布包经 SHA-256 与 GitHub digest 双重校验后原子替换（上游 [xerj-org/xerj](https://github.com/xerj-org/xerj) 为 Apache-2.0 开源；wrapper 三件套为本机自产，不在上游仓库）。默认词法检索而非语义理解，未命中不等于不存在；与 LSP / codegraph 互补，不替代符号引用检查。
+
 ### 工程规划（engineering-planning）
 
 #### [dev-effort-estimator](./dev-effort-estimator/)

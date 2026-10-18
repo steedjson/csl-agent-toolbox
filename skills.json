@@ -317,6 +317,14 @@
         "references/estimation-basis.md",
         "examples/behavior-prompts.md"
       ]
+    },
+    {
+      "name": "xerj",
+      "category": "project-search",
+      "description": "Search this project's indexed source code and documents with the locally installed XERJ service: per-project indices for finding relevant code, definitions, or document passages across an unfamiliar project",
+      "files": [
+        "SKILL.md"
+      ]
     }
   ]
 }
