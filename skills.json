@@ -45,7 +45,15 @@
       "files": [
         "SKILL.md",
         "agents/openai.yaml"
-      ]
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "Pluviobyte/rnskill",
+        "path": "skills/grok-build-cli",
+        "ref": "83d1783b892bbaa29a137895ff8338264b6872fa",
+        "license": "CC-BY-NC-4.0",
+        "synced_at": "2026-10-20"
+      }
     },
     {
       "name": "custom-image-gen",
@@ -234,7 +242,15 @@
       "description": "Extremely strict maintainability review for abstraction quality, giant files, and spaghetti-condition growth",
       "files": [
         "SKILL.md"
-      ]
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "cursor/plugins",
+        "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
+        "ref": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
     },
     {
       "name": "browser-ui-reader",
@@ -255,6 +271,30 @@
       "name": "csl-xiaopiu-design-draft-capture",
       "category": "browser-and-ui",
       "description": "将 xiaopiu（小PIU）原型项目的全部或指定页面导出为本地完整设计稿截图（每页一张、无接缝、含页面树 manifest），供设计稿走查与 UI 审查子智能体按图识读",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
+      "name": "design-taste-frontend",
+      "category": "browser-and-ui",
+      "description": "Anti-slop frontend design direction for landing pages, portfolios, and redesigns: brief inference, design-system selection, typography/color/layout calibration, and a pre-flight anti-template checklist",
+      "files": [
+        "SKILL.md"
+      ],
+      "upstream": {
+        "type": "npm",
+        "package": "natureco-cli",
+        "path": "skills/taste-skill",
+        "version": "6.3.1",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "frontend-ui-ux-design",
+      "category": "browser-and-ui",
+      "description": "Frontend UI/UX engineering discipline for React/shadcn-ui and Vue/shadcn-vue: two-pass design contract (six semantic color tokens, layout skeleton, component mapping), 60-30-10 color discipline, 8pt spacing grid, 4-state usability baseline, and anti-AI-slop audit; backs the csl pipeline frontend gate",
       "files": [
         "SKILL.md"
       ]
@@ -325,6 +365,179 @@
       "files": [
         "SKILL.md"
       ]
+    },
+    {
+      "name": "dao-skill",
+      "category": "skill-management",
+      "description": "道生万 · Agent Skill 元设计器：从模糊需求归根，设计、生成、审计、优化、发布准备或基于证据进化可运行的 Skill。Use when the user wants to create a Skill or Skill family; find a Skill's root problem; evaluate, refactor, harden, optimize, or prepare an existing Skill repository for publication; turn a method, worldview, article, or repository int",
+      "files": [
+        "CONTRIBUTING.md",
+        "LICENSE",
+        "README.md",
+        "SECURITY.md",
+        "SKILL.md",
+        "agents/openai.yaml",
+        "examples/absorb-self-evolution-article.md",
+        "examples/create-colleague-like-skill.md",
+        "examples/create-learning-coach-skill.md",
+        "examples/create-nuwa-like-skill.md",
+        "examples/create-product-strategy-skill.md",
+        "examples/evaluate-existing-skill.md",
+        "examples/evolve-portrait-prompt-master.md",
+        "examples/interactive-evolution-feedback.md",
+        "examples/usage-verification.md",
+        "references/dao-framework.md",
+        "references/evaluation-rubric.md",
+        "references/evolution-protocol.md",
+        "references/first-principles-framework.md",
+        "references/meta-thinking-framework.md",
+        "references/production-skill-patterns.md",
+        "references/runtime-workspace.md",
+        "references/self-evolving-skill-system.md",
+        "references/skill-generation-template.md",
+        "scripts/behavior_contract_check.py",
+        "scripts/evaluation_check.py",
+        "scripts/evolution_check.py",
+        "scripts/install.py",
+        "scripts/quality_check.py",
+        "scripts/repository_check.py",
+        "scripts/run_checks.py",
+        "scripts/test_install.py",
+        "scripts/test_validators.py",
+        "scripts/validation_utils.py",
+        "test-prompts.json"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "gnipbao/dao-skill",
+        "path": ".",
+        "exclude": [
+          ".github/",
+          ".gitignore",
+          "assets/"
+        ],
+        "ref": "1cae835995c0ff4d9a33a6fec82cca0a54b7cd05",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "grill-me",
+      "category": "productivity",
+      "description": "A relentless interview to sharpen a plan or design.",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "mattpocock/skills",
+        "path": "skills/productivity/grill-me",
+        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      },
+      "depends_on": [
+        "grilling"
+      ]
+    },
+    {
+      "name": "grilling",
+      "category": "productivity",
+      "description": "Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "mattpocock/skills",
+        "path": "skills/productivity/grilling",
+        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "agent-reach",
+      "category": "browser-and-ui",
+      "description": "互联网能力路由器：按平台路由到 Exa/OpenCLI/各平台 CLI 与 API，覆盖搜索、社交、招聘、开发、视频、金融与 RSS 共 16 个平台",
+      "files": [
+        "SKILL.md",
+        "references/career.md",
+        "references/dev.md",
+        "references/finance.md",
+        "references/search.md",
+        "references/social.md",
+        "references/video.md",
+        "references/web.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "Panniantong/Agent-Reach",
+        "path": "agent_reach/skill",
+        "ref": "94f06c1969dfc1834001269d79d3ad0972d9dee6",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "grill-with-docs",
+      "category": "productivity",
+      "description": "A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go.",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "mattpocock/skills",
+        "path": "skills/engineering/grill-with-docs",
+        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "domain-modeling",
+      "category": "productivity",
+      "description": "Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.",
+      "files": [
+        "ADR-FORMAT.md",
+        "GLOSSARY-FORMAT.md",
+        "SKILL.md",
+        "agents/openai.yaml"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "mattpocock/skills",
+        "path": "skills/engineering/domain-modeling",
+        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
+    },
+    {
+      "name": "reverse-engineer-anything",
+      "category": "reverse-engineering",
+      "description": "Reverse engineer native, managed, Electron/JavaScript, packaged, firmware, and browser targets with REA. Use shipped-artifact or requested runtime evidence to explain features, compare versions, decompile code, or guide a reconstruction. Skip REA for ordinary source-repository architecture analysis.",
+      "files": [
+        "SKILL.md",
+        "references/android-applications.md",
+        "references/connection-and-recovery.md",
+        "references/evidence-workflows.md",
+        "references/javascript-applications.md",
+        "references/native-and-artifacts.md",
+        "references/runtime-observation.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "morluto/rea",
+        "path": ".agents/skills/reverse-engineer-anything",
+        "ref": "90e433df06b3f83417176b8db1b0a905f9df1d3a",
+        "license": "MIT",
+        "synced_at": "2026-10-20"
+      }
     }
   ]
 }

@@ -34,6 +34,40 @@ def check_skills(repo):
     return errors
 
 
+def check_upstreams(repo):
+    errors = []
+    data = load_json(repo / "skills.json")
+    names = {s.get("name") for s in data.get("skills", [])}
+    for skill in data.get("skills", []):
+        name = skill.get("name")
+        for dep in skill.get("depends_on", []):
+            if dep not in names:
+                errors.append(f"skill {name}: depends_on unknown skill {dep!r}")
+        upstream = skill.get("upstream")
+        if not upstream:
+            continue
+        kind = upstream.get("type")
+        if kind == "github":
+            for field in ("repo", "path", "ref"):
+                if not upstream.get(field):
+                    errors.append(f"upstream {name}: missing '{field}' for github source")
+            ref = upstream.get("ref", "")
+            if ref and not re.fullmatch(r"[0-9a-f]{7,40}", ref):
+                errors.append(f"upstream {name}: github 'ref' must be a commit sha, got {ref!r}")
+        elif kind == "npm":
+            for field in ("package", "path", "version"):
+                if not upstream.get(field):
+                    errors.append(f"upstream {name}: missing '{field}' for npm source")
+        else:
+            errors.append(f"upstream {name}: unsupported type {kind!r}")
+        if not upstream.get("license"):
+            errors.append(f"upstream {name}: missing 'license'")
+        synced = upstream.get("synced_at", "")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(synced)):
+            errors.append(f"upstream {name}: 'synced_at' must be YYYY-MM-DD, got {synced!r}")
+    return errors
+
+
 def check_marketplace(repo):
     mp = repo / ".agents" / "plugins" / "marketplace.json"
     if not mp.is_file():
@@ -102,7 +136,7 @@ def check_skill_contracts(repo):
 
 def main():
     repo = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent
-    errors = check_skills(repo) + check_marketplace(repo) + check_paths(repo) + check_skill_contracts(repo)
+    errors = check_skills(repo) + check_upstreams(repo) + check_marketplace(repo) + check_paths(repo) + check_skill_contracts(repo)
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
