@@ -4,6 +4,15 @@
 
 `my-skills` is source repository for portable Agent Skills. Each top-level directory containing `SKILL.md` is one distributable skill.
 
+## Source Of Truth
+
+This repository is the single source for every skill and plugin. Host skill directories (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.dsh/skills`, `~/.pi/agent/skills`) are symlink mounts, not sources. `~/.cc-switch/skills` is a legacy copy location and is not a source either.
+
+- Install with `python3 scripts/install_skills.py link` (symlink, never copy); check coverage with `status`, remove with `unlink`.
+- Never `cp` a skill into a host directory: a copy detaches from the repository and silently goes stale.
+- Edit skills here, in place. Changes reach every host immediately through the links.
+- Do not add, edit, or delete skills in `~/.cc-switch/skills`. If a skill exists only there, vendor it here first, then relink.
+
 ## Structure
 
 - `skills.json`: repository metadata and public skill registry.
@@ -15,7 +24,7 @@
 - `README.md`: public skill list and usage overview.
 - `codexradar-model-advisor/`: current OpenAI Codex model-advice skill.
 
-Repository currently has no installer, uninstaller, workflow runtime, or test harness. Do not document or invoke missing commands.
+Repository has no workflow runtime or test harness. Scripts: `scripts/validate_repo.py`, `scripts/sync_upstream.py`, `scripts/install_skills.py`, and the offline suite `scripts/test_sync_upstream.py`; do not document or invoke commands that do not exist.
 
 ## Code Navigation
 
@@ -40,6 +49,17 @@ Follow portable Agent Skills layout.
 - Keep standalone Skill packages flat at repository root; category metadata in `skills.json` does not control paths.
 - Update root `README.md` when public skill list or install commands change.
 - Preserve source skill behavior during migrations. Do not restore files removed by later source revisions.
+
+## Third-Party Skills
+
+Vendored skills declare an `upstream` block in `skills.json` (`type`, source coordinates, pinned `ref`/`version`, `license`, `synced_at`, optional `exclude`). `scripts/sync_upstream.py` performs the three-way merge; the pin doubles as the merge base.
+
+- Vendor with `python3 scripts/sync_upstream.py import --source <owner/repo|GitHub URL|npm:pkg> [--path ...] [--exclude ...]`. It writes files and records the pin in one step; never copy files in by hand, because an unrecorded pin makes local edits indistinguishable from upstream changes.
+- Never hand-edit a pinned `ref`/`version`. Advance it with `python3 scripts/sync_upstream.py update --apply`, which also refreshes the `files` list and `synced_at`.
+- Local adaptations are allowed and expected; they survive updates as long as they do not collide with the same upstream hunk. Collisions abort that skill and leave files untouched. Binary files never merge: both sides changed means conflict.
+- A skill that delegates to another skill (its body is only `Call the Skill tool with "<name>"`) needs that dependency vendored too and declared as `"depends_on": ["<name>"]`; `validate_repo.py` checks the reference resolves.
+- Check before adding a new third-party skill: record the upstream coordinates and pin the revision actually vendored, then run `check` to confirm a clean baseline.
+- Keep the upstream `license` field accurate; do not vendor sources whose license forbids redistribution.
 
 ## CodexRadar Skill
 

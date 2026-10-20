@@ -2,6 +2,30 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-21][repo-as-source] 源与副本方向反转:仓库成为唯一源,宿主改 symlink,关掉 CC Switch 自动回写
+- 现象: 此前 `~/.cc-switch/skills` 被当作 SRC、本仓库当副本;4 个宿主里 114 个条目全部指向 `~/.cc-switch/skills`,另有 6 个真实目录副本(agent-reach/reverse-engineer-anything/xerj/grill-me/grilling)与仓库脱钩。CC Switch 自身 `skillSyncMethod: auto` + `resync_skills_to_apps`,下次启动会把 symlink 覆盖回副本,源再次分裂
+- 根因: 仓库缺少"安装"能力,只能手工 `cp`;`ln-install-skill` 默认 SRC 也指向 cc-switch,把历史副本位置当成了源。同时 `agent-model-policy-sync/` 在会话中途从工作区消失但 skills.json 仍引用
+- 修法: 新增 `scripts/install_skills.py`(status/link/unlink/list,只建删 symlink,`--prune` 重定向旧链接,真实目录不动);`link --prune` 把 114 条重定向到仓库,6 个副本先备份到 `~/.skill-copies-backup-<ts>` 再替换;`ln-install-skill` 默认 SRC 改为仓库根;CC Switch `skillSyncMethod` 改 `manual`(settings.json 与 db 均已备份);丢失技能从 HEAD `git checkout` 恢复并重新链接
+- 关联: scripts/install_skills.py、scripts/test_install_skills.py(14 例)、ln-install-skill/SKILL.md:14、~/.cc-switch/settings.json、AGENTS.md/CLAUDE.md Source Of Truth 段
+- 复发: 1 次 · 最近 2026-10-21
+- 教训: 只要有第二个目录能写回宿主,源就永远是两个;切换源必须同时关掉旧源的回写开关,并把"是否 symlink"做成可检查的状态(real-directory 必须报出来而不是静默覆盖)
+
+## [2026-10-20][sync-upstream] 两种第三方形态暴露 updater 三个缺陷:根路径不可用、懒加载 2 分半、二进制合并崩溃
+- 现象: ① 仓库根即 Skill 的形态(`gnipbao/dao-skill`,SKILL.md 在顶层)配 `path: "."` 时,前缀切成 `./`,所有相对路径都匹配不上;② 单 skill monorepo 形态(`mattpocock/skills`)38 个文件逐个 `git show`,在 blobless 克隆下每次触发一次网络请求,单次 fetch 耗时 2 分半;③ 上游带 2.2MB PNG,两边都改时 `git merge-file` 直接以 255 退出,抛原始异常而非记冲突
+- 根因: ① 前缀用 `path.rstrip("/") + "/"` 拼,`.` 不是空串;② 未做 blob 预取,`--filter=blob:none` 的按需拉取退化成 N 次串行请求;③ merge3 不判断内容类型,git 对二进制只返回错误码 255
+- 修法: 根路径归一为 `scope=[]`/`prefix=""`;`prefetch_blobs` 用一次 `git fetch <oid...>` 批量取回(38 文件 10s→2.8s);`is_binary` 检测 NUL 字节,二进制两边都改直接记冲突;另加 `import` 子命令把"搬入即记 pin"变成一条命令,`exclude` 过滤 CI/大图,`depends_on` 声明转调依赖
+- 关联: scripts/sync_upstream.py(github_files/prefetch_blobs/is_binary/merge3/cmd_import)、scripts/test_sync_upstream.py(30 例)
+- 复发: 1 次 · 最近 2026-10-20
+- 教训: 部分克隆(`--filter=blob:none`)的收益只在批量取 blob 时成立;逐文件读取会退化成 N 次网络往返,比直接全量 fetch 慢一个数量级
+
+## [2026-10-20][sync-upstream] 第三方 skill 只能手工复制,无来源记录也无更新路径
+- 现象: 仓库 21 个 skill 中 3 个来自第三方(`grok-build-cli`、`thermo-nuclear-code-quality-review`、`design-taste-frontend`),但没有 `upstream` 元数据、没有 pin、README 只写 `cp -R`,上游改动只能靠人工 diff;`design-taste-frontend` 甚至未登记进 `skills.json`
+- 根因: 仓库定位是"源集合",只约定复制安装,从未定义 vendored skill 的来源与同步契约;`ln-install-skill` 只做 symlink,不理解上游
+- 修法: `skills.json` 增加 `upstream` 块(github/npm、路径、pin、license、synced_at);新增 `scripts/sync_upstream.py`,以 pin 为三方合并基线,`check` 报告漂移、`update --apply` 写入并推进 pin、冲突则整 skill 跳过;`--install` 镜像到已安装副本;`validate_repo.py` 增加 upstream 结构校验;确定性测试 `scripts/test_sync_upstream.py`(15 例,含 file:// 上游端到端)
+- 关联: scripts/sync_upstream.py、scripts/test_sync_upstream.py、scripts/validate_repo.py:37、skills.json、README.md「第三方 Skill 更新」
+- 复发: 1 次 · 最近 2026-10-20
+- 教训: 复制第三方内容进仓库的那一刻就要写下来源与 pin,否则"本地改动"和"上游版本"永久无法区分,后续任何自动化都无从判断基线
+
 ## [2026-10-18][xerj] xerj-project 输出被 xerj-service 用法文本污染,且意外暴露 service 命令面
 - 现象: 每次调用 xerj-project(--help/info/search 等),stdout 前置 6 行 xerj-service 用法文本,search --json 的 jq 管道解析被破坏;更严重的是 xerj-project install/update --force 会经 import 副作用真实执行 service 命令,而非走 xerj-project 自己的未知命令拒绝
 - 根因: ~/.bun/bin/xerj-service 顶层 CLI 分发块无 import.meta.main 模块守卫;xerj-project L7 import 该模块取 acquireOperation/scheduleUpdate 时,分发块以宿主 argv 立即执行

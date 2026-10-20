@@ -8,7 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `my-skills` is source repo for portable Agent Skills. Each top-level directory containing `SKILL.md` is one distributable skill. Skills install per skill (Claude Code: `~/.claude/skills/<skill-name>/`); Codex plugins install via the local marketplace. Registry name is `vlong-skills` (`skills.json`); marketplace name is `vlong-skills-local` (`.agents/plugins/marketplace.json`).
 
-No installer, uninstaller, workflow runtime, or test harness exists in this repo. Do not document or invoke missing commands.
+**This repository is the single source of truth.** Host skill directories are symlink mounts; `~/.cc-switch/skills` is a legacy copy location, not a source. Install with `python3 scripts/install_skills.py link`; never `cp` a skill into a host directory, and never author skills in `~/.cc-switch/skills`.
+
+No workflow runtime or test harness exists in this repo. Repository scripts: `scripts/validate_repo.py` (consistency checks), `scripts/sync_upstream.py` (third-party skill import/update), `scripts/install_skills.py` (symlink skills into hosts), `scripts/test_sync_upstream.py` (offline updater tests). Do not document or invoke missing commands.
 
 ## Structure
 
@@ -23,11 +25,22 @@ No installer, uninstaller, workflow runtime, or test harness exists in this repo
 ## Commands
 
 ```bash
-jq empty skills.json     # validate registry JSON
-git diff --check         # whitespace/conflict check
+jq empty skills.json                          # validate registry JSON
+python3 scripts/validate_repo.py              # registry/marketplace/path/contract checks
+python3 scripts/sync_upstream.py check        # third-party skill drift (exit 1 = drift)
+python3 scripts/sync_upstream.py update --apply
+python3 scripts/sync_upstream.py import --source <owner/repo|URL|npm:pkg>   # vendor + pin
+python3 scripts/install_skills.py status      # host link coverage
+python3 scripts/install_skills.py link        # symlink repo skills into hosts
+python3 scripts/test_sync_upstream.py         # offline updater tests
+git diff --check                              # whitespace/conflict check
 ```
 
 For new/changed skills, also run Skill Creator `quick_validate.py` when available (needs Python with `PyYAML`). For resource scripts, run focused script tests. For source migrations, compare migrated files byte-for-byte when exact preservation is required.
+
+## Third-Party Skills
+
+Vendored skills declare an `upstream` block in `skills.json` (`type`, source coordinates, pinned `ref`/`version`, `license`, `synced_at`, optional `exclude`). `scripts/sync_upstream.py` does a three-way merge with the pin as merge base: unchanged-local takes upstream, unchanged-upstream keeps local, both-changed merges via `git merge-file`, and a conflict skips that skill without touching files or advancing the pin. Binary files never merge — both sides changed is a conflict. Never hand-edit a pinned revision; advance it through `update --apply`, which also refreshes `files` and `synced_at`. Vendor new skills with `import --source <owner/repo|GitHub URL|npm:pkg>`, never by hand. A skill whose body only forwards to another skill needs that dependency vendored plus `"depends_on": ["<name>"]`. Keep `license` accurate.
 
 ## Code Navigation
 

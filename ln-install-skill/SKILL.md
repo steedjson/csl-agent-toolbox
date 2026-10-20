@@ -11,13 +11,15 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 ## Defaults (override per request)
 
-- **Source directory** `SRC` = `~/.cc-switch/skills` — the user's local collection of skill bundles.
-  - If the user names a different directory (e.g. `~/.claude/skills`, `./skills`), use that instead.
+- **Source directory** `SRC` = the `my-skills` repository root — the canonical source of truth for every skill and plugin.
+  - Resolve it in order: path the user names → the current repo if its root contains `skills.json` → `~/BDSYNC/self/AI/tools/my-skills`.
+  - `~/.cc-switch/skills` is **not** a source any more. It is only a legacy copy location; if the user points there, say so and offer the repository instead.
+  - Never treat a host directory (`~/.claude/skills`, `~/.codex/skills`) as a source.
 - **Target directory** `DST` = the destination host's skills directory. Resolve in order:
   1. Path explicitly given by the user — use it.
   2. "project" / "in this repo" → `<repo>/.claude/skills` or `<repo>/.agents/skills`.
-  3. Probe, take the first existing: `~/.dsh/skills` → `~/.claude/skills` → `~/.agents/skills`.
-  4. None exists → ask, or `mkdir -p` the one they name. Known hosts: DSH `~/.dsh/skills`, Claude Code `~/.claude/skills`, pi `~/.pi/agent/skills`, cross-tool `~/.agents/skills`; Codex and other hosts — use the path from that host's docs.
+  3. Probe, take the first existing: `~/.claude/skills` → `~/.codex/skills` → `~/.agents/skills` → `~/.dsh/skills` → `~/.pi/agent/skills`.
+  4. None exists → ask, or `mkdir -p` the one they name. Known hosts: Claude Code `~/.claude/skills`, Codex `~/.codex/skills`, cross-tool `~/.agents/skills`, DSH `~/.dsh/skills`, pi `~/.pi/agent/skills`.
 - **Link name** = the source skill's directory basename (e.g. `SRC/grilling` → `DST/grilling`).
   - If the source `SKILL.md` frontmatter `name` differs from the directory basename, **report the difference** but still link by directory basename. (hosts identify a skill by its frontmatter `name`; the link name only needs to be unique in `DST`.)
 
@@ -25,7 +27,7 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 The user wants to, or clearly should, do any of:
 
-- "install / link / mount skill X (from ~/.cc-switch/skills) into DSH / Claude Code / pi / this repo"
+- "install / link / mount skill X (from the my-skills repo) into DSH / Claude Code / Codex / pi"
 - "list what skills are available to install"
 - "check if skill X is properly installed / recognized"
 - "uninstall / remove skill X" (only the link, never the source)

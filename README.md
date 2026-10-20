@@ -107,6 +107,10 @@
 
 看本地浏览器页面内容、操作浏览器页面、把 UI 设计图/原型转成结构化需求清单。主体用 `agent-browser`（CDP、可访问性树 `@eN` refs、会话隔离、附着已登录 Chrome），AppleScript+JS 注入作为零配置后备（不重启、直接附着已打开的 Chrome，只读为主）。覆盖公开页读取、已登录页附着（`--auto-connect`/`--cdp` + `--pin-tab`）、SPA 原型逐页爬取（xiaopiu 52 页已验证）、图片批量下载与宽表分段读取。写操作默认逐项确认，只读默认。
 
+#### [design-taste-frontend](./design-taste-frontend/)
+
+落地页、作品集与改版的反模板化前端设计方向：先读 brief 推断设计意图，再选设计系统与三个设计旋钮，校准排版/配色/布局，最后过一遍反 AI 套路预检清单。上游为 `tasteskill`（npm `natureco-cli` 内的 `skills/taste-skill`），按 `skills.json` 的 `upstream` 固定版本同步。
+
 ### 视觉感知（visual-perception）
 
 #### [perceived-form](./perceived-form/)
@@ -117,7 +121,17 @@
 
 #### [ln-install-skill](./ln-install-skill/)
 
-用符号链接把本地 skills 目录（默认 `~/.cc-switch/skills`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：DSH（`~/.dsh/skills`）、Claude Code（`~/.claude/skills`）、pi（`~/.pi/agent/skills`）、跨工具（`~/.agents/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标目录按「用户指定 → 项目级 → 探测首个存在」解析，支持一次装到所有宿主。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。
+用符号链接把本仓库（`my-skills`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标目录按「用户指定 → 项目级 → 探测首个存在」解析，支持一次装到所有宿主。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
+
+#### [dao-skill](./dao-skill/)
+
+Skill 元设计器：先把模糊需求归根，再设计、生成、审计、优化或按证据进化可运行的 Skill；也用于评估既有 Skill 仓库、把方法论/文章/代码库转成可执行 Skill 体系。上游 [gnipbao/dao-skill](https://github.com/gnipbao/dao-skill)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步。
+
+### 生产力（productivity）
+
+#### [grill-me](./grill-me/) / [grilling](./grilling/)
+
+`grill-me` 是 `/grill-me` 的显式入口（`disable-model-invocation: true`），正文只转调 `grilling`；`grilling` 才是实际工作流：把计划或决策展开成设计树，按轮次追问整个 frontier，每问附带推荐答案，直到双方理解一致。两者上游均为 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）；`grill-me` 在 `skills.json` 里以 `depends_on: ["grilling"]` 声明依赖，只装前者不会工作。
 
 ## Codex 插件
 
@@ -138,24 +152,7 @@
 - `openwolf-codegraph@my-skills-local` 已更名为 `openwolf-codegraph-bridge@vlong-skills-local`。
 - 仓库改名不会自动删除已安装的旧 Skill、旧插件或旧 marketplace 注册。先安装并验证新名称，再按实际安装状态清理旧条目。
 
-复制 skill 目录下的 `SKILL.md` 到 Claude Code skills 路径：
-
-```bash
-mkdir -p ~/.claude/skills/codexradar-model-advisor
-cp codexradar-model-advisor/SKILL.md ~/.claude/skills/codexradar-model-advisor/SKILL.md
-
-mkdir -p ~/.claude/skills/model-delegate
-cp -R model-delegate/. ~/.claude/skills/model-delegate/
-
-mkdir -p ~/.claude/skills/custom-image-gen
-cp -R custom-image-gen/. ~/.claude/skills/custom-image-gen/
-
-mkdir -p ~/.claude/skills/ln-install-skill
-cp ln-install-skill/SKILL.md ~/.claude/skills/ln-install-skill/SKILL.md
-
-mkdir -p ~/.claude/skills/grok-build-cli
-cp -R grok-build-cli/. ~/.claude/skills/grok-build-cli/
-```
+Skill 安装见下方「从本仓库安装到宿主」——用 symlink，不要手工 `cp`，否则宿主里会出现与仓库脱钩的旧副本。
 
 `openwolf-codegraph-bridge` 无构建步骤：
 
@@ -188,6 +185,100 @@ codegraph status
 ```
 
 详细安装、仓库准备、日常使用、卸载与故障排查见 [`plugins/openwolf-codegraph-bridge/README.md`](./plugins/openwolf-codegraph-bridge/README.md)。
+
+---
+
+## 从本仓库安装到宿主
+
+**本仓库是唯一源。** 宿主目录（`~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.dsh/skills`、`~/.pi/agent/skills`）只是 symlink 挂载点；`~/.cc-switch/skills` 是历史副本位置，不再是源。
+
+```bash
+# 看每个宿主装了什么、哪些还指向旧位置
+python3 scripts/install_skills.py status
+
+# 把所有 skill 链接到所有已存在的宿主（只建/改 symlink，不复制、不改仓库文件）
+python3 scripts/install_skills.py link
+
+# 只装某一个 skill 到某一个宿主
+python3 scripts/install_skills.py link --skill grilling --host codex
+
+# 把仍指向仓库外的旧链接改指到仓库
+python3 scripts/install_skills.py link --prune
+
+# 卸载（只删链接）
+python3 scripts/install_skills.py unlink --skill grilling
+
+# 列出仓库里的 skill 及其上游来源
+python3 scripts/install_skills.py list
+```
+
+`status` 会把每个条目分成 `linked`（已指向仓库）、`elsewhere`（指向旧目录，需 `--prune`）、`missing`（未安装）、`real-directory`（是真实目录而非链接，脚本不会动它，需人工确认后删除）。
+
+symlink 的好处是改仓库即刻在所有宿主生效，不存在"装了旧版"的问题。宿主按目录名 + `SKILL.md` 发现技能，链接名用仓库目录名。
+
+---
+
+## 第三方 Skill 更新
+
+搬进来的第三方 Skill 在 `skills.json` 里带 `upstream` 块，记录来源、上游路径、当前固定版本和许可证。`scripts/sync_upstream.py` 用这个块做一键导入、检查与更新。
+
+### 搬进来（一次性）
+
+`import` 直接把上游内容落盘，同时把 pin 写进 `skills.json`——pin 就是以后三方合并的基线，所以必须搬入时记录。
+
+```bash
+# 仓库根就是 Skill（SKILL.md 在顶层）
+python3 scripts/sync_upstream.py import \
+  --source gnipbao/dao-skill \
+  --exclude '.github/' --exclude '.gitignore' --exclude 'assets/' \
+  --category skill-management
+
+# monorepo 里的单个 Skill：直接贴浏览器地址即可，路径和 ref 自动解析
+python3 scripts/sync_upstream.py import \
+  --source 'https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md' \
+  --category productivity --license MIT
+
+# npm 包里的目录
+python3 scripts/sync_upstream.py import --source npm:natureco-cli --path skills/taste-skill
+```
+
+`--source` 接受 `owner/repo`、GitHub URL、`/tree/<ref>/<path>`、`/blob/<ref>/.../SKILL.md`、`npm:<package>`。`--path` 显式覆盖解析出的子目录；`--name` 覆盖目录名（默认取子目录或仓库 basename）；`--exclude` 可重复，用 glob 剔除 CI 配置、`.gitignore`、大图等不该入库的东西；`--license` 用于上游没有 LICENSE 文件的情况，否则记为 `UNVERIFIED`。
+
+Skill 之间互相依赖时（例如 `grill-me` 正文只有一句 `Call the Skill tool with "grilling"`），给被依赖项也建一条 `upstream`，并在 `skills.json` 里加 `"depends_on": ["grilling"]`；`validate_repo.py` 会校验引用存在。
+
+### 更新
+
+```bash
+# 只检查：对比固定版本与上游最新版，列出会发生的变更（不写文件）
+python3 scripts/sync_upstream.py check
+
+# 只检查单个 skill
+python3 scripts/sync_upstream.py check --skill grok-build-cli
+
+# 预览更新（dry run）
+python3 scripts/sync_upstream.py update
+
+# 应用更新：写文件、推进 skills.json 里的 ref/version、刷新 files 列表
+python3 scripts/sync_upstream.py update --apply
+
+# 应用更新后刷新手工复制过的安装目录（默认 ~/.cc-switch/skills，可用 SKILL_INSTALL_DIR 覆盖）
+python3 scripts/sync_upstream.py update --apply --install
+```
+
+`check` 输出三种状态：`current`（与上游一致，括号里会标出本地改动数）、`pin behind`（内容没变但上游有更新的 commit）、`drift`（上游内容变了，逐文件列出 update/merge/delete/add/conflict）。
+
+同步规则：上游 `ref`/`version` 同时是三方合并的基线。
+
+- 本地未改 → 直接取上游。
+- 上游未改 → 保留本地改。
+- 两边都改 → `git merge-file` 合并；有冲突则该 skill 整个跳过、不动文件、不推进版本号，解决后重跑。
+- 二进制文件（图片等）两边都改 → 直接记冲突，不做文本合并。
+- 上游删文件 → 本地也未改则删除；本地改过则记为冲突。
+- 上游新增文件 → 直接加入。
+
+支持的 `upstream.type`：`github`（`repo` + `path` + `ref`，取单个 commit）与 `npm`（`package` + `path` + `version`，校验 sha512 后解包）。`path` 为 `.` 表示仓库/包根目录；`exclude` 在两种类型下都生效。`--install` 只覆盖已存在的安装目录，跳过 symlink 安装（链接本身已跟随源码），加 `--prune` 才删除安装目录里多出的文件。
+
+不要手改 pin。跑 `update --apply` 会同时刷新 `files` 和 `synced_at`。
 
 ---
 
