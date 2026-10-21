@@ -8,13 +8,14 @@ immediately in every host.
 
 Usage:
     python3 scripts/install_skills.py status
+    python3 scripts/install_skills.py link --skill <name> --host <agent>
     python3 scripts/install_skills.py link                 # all skills, all existing hosts
-    python3 scripts/install_skills.py link --skill grilling --host codex
     python3 scripts/install_skills.py link --prune          # remove links pointing elsewhere
     python3 scripts/install_skills.py unlink --skill grilling
 
 Hosts: claude (~/.claude/skills), codex (~/.codex/skills), agents (~/.agents/skills),
-dsh (~/.dsh/skills), pi (~/.pi/agent/skills). Override the set with --host.
+dsh (~/.dsh/skills), pi (~/.pi/agent/skills), omp (~/.omp/agent/skills). Override with --host.
+Installing is always explicit: run this only when the user names the target agent.
 Only symlinks are created or removed; repository files are never modified.
 """
 import argparse
@@ -31,6 +32,7 @@ HOSTS = {
     "agents": "~/.agents/skills",
     "dsh": "~/.dsh/skills",
     "pi": "~/.pi/agent/skills",
+    "omp": "~/.omp/agent/skills",
 }
 
 
@@ -74,6 +76,10 @@ def cmd_status(selected_hosts, selected_skills):
     for host, root in host_paths(selected_hosts).items():
         if not root.is_dir():
             print(f"{host}: {root} does not exist")
+            continue
+        if root.is_symlink() and same_path(root, REPO):
+            print(f"{host}: {root} -> direct connection (directory symlink to the repository)")
+            print(f"  all {len(skills)} repository skill(s) visible; nothing to link or unlink")
             continue
         counts = {"ok": 0, "elsewhere": 0, "missing": 0, "real-directory": 0}
         problems = []

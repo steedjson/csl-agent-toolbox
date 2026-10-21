@@ -107,7 +107,7 @@
 
 #### [ln-install-skill](./ln-install-skill/)
 
-用符号链接把本仓库（`my-skills`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标目录按「用户指定 → 项目级 → 探测首个存在」解析，支持一次装到所有宿主。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
+用符号链接把本仓库（`my-skills`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`）、omp（`~/.omp/agent/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标宿主必须由用户点名，未点名先询问，不自行探测。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
 
 #### [dao-skill](./dao-skill/)
 
@@ -176,7 +176,9 @@ codegraph status
 
 ## 从本仓库安装到宿主（手动）
 
-**本仓库是唯一源，但不自动安装。** `import` / `update` / `sync` 等仓库操作只写仓库文件，从不触碰宿主目录；把 skill 装进哪个 agent 由你显式决定。宿主目录（`~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.dsh/skills`、`~/.pi/agent/skills`）只是 symlink 挂载点；`~/.cc-switch/skills` 是历史副本位置，不再是源。
+**本仓库是唯一源，但不自动安装。** `import` / `update` / `sync` 等仓库操作只写仓库文件，从不触碰宿主目录；把 skill 装进哪个 agent 由你显式决定。宿主目录（`~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.dsh/skills`、`~/.pi/agent/skills`、`~/.omp/agent/skills`）只是 symlink 挂载点；`~/.cc-switch/skills` 是历史副本位置，不再是源。
+
+**安装位置政策。** 默认装到目标 agent 自己的技能目录（`~/.claude/skills`、`~/.codex/skills`、`~/.omp/agent/skills`、`~/.pi/agent/skills`、`~/.dsh/skills`）；用户级跨工具目录 `~/.agents/skills` **只在明确说"装到用户级"时使用**，默认不挂载、更不允许自行指向本仓库。omp 需要技能时用 `--host omp` 装进 `~/.omp/agent/skills`（agent 级），不走用户级。`~/.agents/.skill-lock.json` 是 Vercel skills CLI 的锁文件——该 CLI 同样默认写用户级，别再用 `npx skills add`，入仓一律走 `python3 scripts/sync_upstream.py import`。
 
 ```bash
 # 看每个宿主装了什么、哪些还指向旧位置

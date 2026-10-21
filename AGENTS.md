@@ -6,7 +6,9 @@
 
 ## Source Of Truth
 
-This repository is the single source for every skill and plugin. Host skill directories (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.dsh/skills`, `~/.pi/agent/skills`) are symlink mounts, not sources. `~/.cc-switch/skills` is a legacy copy location and is not a source either.
+This repository is the single source for every skill and plugin. Host skill directories (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.dsh/skills`, `~/.pi/agent/skills`, `~/.omp/agent/skills`) are symlink mounts, not sources. `~/.cc-switch/skills` is a legacy copy location and is not a source either.
+
+**Install location policy**: by default a skill installs into the target agent's own skills directory (`~/.claude/skills`, `~/.codex/skills`, `~/.omp/agent/skills`, `~/.pi/agent/skills`, `~/.dsh/skills`). The user-level cross-tool directory `~/.agents/skills` is used ONLY when the user explicitly says "用户级" / "装到用户级目录" — never mount or link it by default, and never point it at the repository on your own initiative. omp discovers skills from its own directory plus user-level/project `.agents` walk-up; when omp needs a skill, link it into `~/.omp/agent/skills` (`--host omp`), not the user-level directory.
 
 - Never install into an agent on your own initiative. Installing happens only when the user names the target agent ("装到 codex"). Until then, `import` / `update` / sync write repository files only and never touch host skill directories. When the user does ask, run `python3 scripts/install_skills.py link --skill <name> --host <agent>` (symlink, never copy); check coverage with `status`, remove with `unlink`.
 - Never `cp` a skill into a host directory: a copy detaches from the repository and silently goes stale.

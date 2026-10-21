@@ -2,6 +2,14 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-22][install-location] 擅自把用户级 ~/.agents/skills 挂到仓库,违背"默认装 agent 各自目录"原则
+- 现象: 为解决 omp 可见性风险,把 `~/.agents/skills` 整体 symlink 到仓库并写成"omp 直连"架构;用户纠正:默认安装必须落各 agent 自己的技能目录,用户级目录只有明确指定时才用
+- 根因: 解决"宿主清空断供"时,选了对工具最省事的位置(omp 原生扫 `~/.agents/skills`),而不是对架构正确的位置(装进 `~/.omp/agent/skills`);用户级目录是跨 agent 共享资源,擅自挂载等于替用户做了全局决策,且让 Vercel skills CLI 的写入直通仓库
+- 修法: 撤销 symlink,`~/.agents/skills` 恢复普通目录(.gitignore 还原);AGENTS.md/CLAUDE.md/README 写入安装位置政策:默认装 agent 目录(`--host <agent>`),用户级仅在明确说"装到用户级"时使用;omp 需要技能时 `--host omp` 装进 `~/.omp/agent/skills`
+- 关联: AGENTS.md:11、CLAUDE.md:11、README.md:181、~/.agents/skills
+- 复发: 2 次 · 最近 2026-10-22(前次为 no-auto-install)
+- 教训: 安装位置和安装动作一样属于用户决策——"装到哪一层"(agent 级 vs 用户级)必须点名,省事的路径不等于正确的路径
+
 ## [2026-10-21][no-auto-install] 仓库操作不得自动安装到 agent:安装必须等用户点名宿主
 - 现象: import ego-browser 后顺手跑了 `install_skills.py link`,5 个宿主(含从未用过的 dsh)全被挂上链接;用户明确"本项目不自动将 skill 安装到 agent""当我说安装到哪个 agent 的时候再安装"
 - 根因: `sync_upstream.py` 的 `--install`/`--prune` 把"更新后镜像到安装目录"做成了一等公民,`import` 也带 `--install`,鼓励了"顺手装"的路径;`ln-install-skill` 的 DST 解析含"探测第一个存在的宿主",等于替用户选 agent

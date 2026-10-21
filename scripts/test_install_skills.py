@@ -108,6 +108,15 @@ class InstallTests(unittest.TestCase):
         self.run_cmd("link", "--skill", "alpha")
         self.assertEqual(self.run_cmd("status"), 0)
 
+    def test_status_detects_whole_directory_direct_connection(self):
+        direct = self.tmp / "direct" / "skills"
+        direct.parent.mkdir(parents=True)
+        direct.symlink_to(self.repo)
+        with mock.patch.object(inst, "HOSTS", {"direct": str(direct)}):
+            with mock.patch.object(sys, "argv", ["install_skills.py", "status"]):
+                self.assertEqual(inst.main(), 0)
+        self.assertTrue((direct / "alpha" / "SKILL.md").exists())
+
     def test_missing_host_directory_is_skipped(self):
         with mock.patch.object(inst, "HOSTS", {"ghost": str(self.tmp / "nope")}):
             with mock.patch.object(sys, "argv", ["install_skills.py", "link"]):
