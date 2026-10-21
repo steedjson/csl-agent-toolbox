@@ -75,15 +75,6 @@ class FrontmatterTests(unittest.TestCase):
             (Path(tmp) / "SKILL.md").write_text("body only\n", encoding="utf-8")
             self.assertIsNone(sync.frontmatter_name(Path(tmp)))
 
-    def test_resolves_by_frontmatter_when_dir_differs(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            installed = Path(tmp) / "taste-skill"
-            installed.mkdir()
-            (installed / "SKILL.md").write_text(
-                "---\nname: design-taste-frontend\n---\n", encoding="utf-8")
-            self.assertEqual(sync.resolve_install_target(Path(tmp), "design-taste-frontend"), installed)
-            self.assertIsNone(sync.resolve_install_target(Path(tmp), "absent"))
-
 
 class GithubFlowTests(unittest.TestCase):
     def setUp(self):
@@ -134,8 +125,7 @@ class GithubFlowTests(unittest.TestCase):
 
     def test_apply_updates_pin_and_preserves_local_edits(self):
         new_sha = self.bump_upstream({"SKILL.md": "1-up\n2\n3\n", "new.md": "n\n"})
-        code = sync.cmd_update(self.repo, set(), apply=True, install=False, prune=False,
-                               git_base=self.git_base)
+        code = sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertEqual(code, 0)
         self.assertEqual((self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8"), "1-up\n2\n3\n")
         self.assertEqual((self.repo / "demo" / "new.md").read_text(encoding="utf-8"), "n\n")
@@ -149,8 +139,7 @@ class GithubFlowTests(unittest.TestCase):
         self.bump_upstream({"SKILL.md": "1-up\n2-up\n3\n"})
         (self.repo / "demo" / "SKILL.md").write_text("1-local\n2-local\n3\n", encoding="utf-8")
         before = (self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8")
-        code = sync.cmd_update(self.repo, set(), apply=True, install=False, prune=False,
-                               git_base=self.git_base)
+        code = sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertEqual(code, 1)
         self.assertEqual((self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8"), before)
         entry = json.loads((self.repo / "skills.json").read_text(encoding="utf-8"))["skills"][0]
@@ -164,31 +153,11 @@ class GithubFlowTests(unittest.TestCase):
 
     def test_deleted_upstream_file_is_removed(self):
         self.bump_upstream({"new.md": "n\n"})
-        sync.cmd_update(self.repo, set(), apply=True, install=False, prune=False,
-                        git_base=self.git_base)
+        sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertTrue((self.repo / "demo" / "new.md").exists())
         self.bump_upstream({"new.md": None})
-        sync.cmd_update(self.repo, set(), apply=True, install=False, prune=False,
-                        git_base=self.git_base)
+        sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertFalse((self.repo / "demo" / "new.md").exists())
-
-    def test_install_mirrors_and_prunes(self):
-        install_root = self.tmp / "installed"
-        target = install_root / "demo"
-        target.mkdir(parents=True)
-        (target / "SKILL.md").write_text("old\n", encoding="utf-8")
-        (target / "stale.md").write_text("stale\n", encoding="utf-8")
-        self.bump_upstream({"SKILL.md": "1-up\n2\n3\n"})
-        os.environ["SKILL_INSTALL_DIR"] = str(install_root)
-        try:
-            code = sync.cmd_update(self.repo, set(), apply=True, install=True, prune=True,
-                                   git_base=self.git_base)
-        finally:
-            del os.environ["SKILL_INSTALL_DIR"]
-        self.assertEqual(code, 0)
-        self.assertEqual((target / "SKILL.md").read_text(encoding="utf-8"), "1-up\n2\n3\n")
-        self.assertFalse((target / "stale.md").exists())
-        self.assertTrue((target / "agents" / "openai.yaml").exists())
 
 
 class BinaryTests(unittest.TestCase):
@@ -267,8 +236,7 @@ class ImportFlowTests(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def test_import_subdirectory_records_pin(self):
-        code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
         self.assertEqual(sorted(p.name for p in (self.repo / "demo").iterdir()),
                          ["SKILL.md", "notes.md"])
@@ -279,41 +247,35 @@ class ImportFlowTests(unittest.TestCase):
         self.assertEqual(entry["files"], ["SKILL.md", "notes.md"])
 
     def test_import_repo_root_includes_nested_files(self):
-        code = sync.cmd_import(self.repo, "whole", "upstream", ".", [], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "whole", "upstream", ".", [], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
         self.assertTrue((self.repo / "whole" / "SKILL.md").exists())
         self.assertTrue((self.repo / "whole" / "skills" / "demo" / "SKILL.md").exists())
         self.assertTrue((self.repo / "whole" / "README.md").exists())
 
     def test_import_exclude_drops_paths(self):
-        code = sync.cmd_import(self.repo, "whole", "upstream", ".", ["skills/"], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "whole", "upstream", ".", ["skills/"], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
         self.assertFalse((self.repo / "whole" / "skills").exists())
         self.assertTrue((self.repo / "whole" / "SKILL.md").exists())
 
     def test_import_refuses_existing_directory(self):
         (self.repo / "demo").mkdir()
-        code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(code, 2)
 
     def test_import_requires_skill_md(self):
-        code = sync.cmd_import(self.repo, "readme-only", "upstream", ".", ["skills/", "SKILL.md"], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "readme-only", "upstream", ".", ["skills/", "SKILL.md"], "test", git_base=self.git_base)
         self.assertEqual(code, 2)
 
     def test_import_detects_license(self):
-        code = sync.cmd_import(self.repo, "whole", "upstream", ".", [], "test",
-                               install=False, git_base=self.git_base)
+        code = sync.cmd_import(self.repo, "whole", "upstream", ".", [], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
         entry = json.loads((self.repo / "skills.json").read_text(encoding="utf-8"))["skills"][0]
         self.assertEqual(entry["upstream"]["license"], "MIT")
 
     def test_imported_skill_is_then_checkable(self):
-        sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test",
-                        install=False, git_base=self.git_base)
+        sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(sync.cmd_check(self.repo, set(), self.git_base), 0)
 
 

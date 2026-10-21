@@ -174,19 +174,19 @@ codegraph status
 
 ---
 
-## 从本仓库安装到宿主
+## 从本仓库安装到宿主（手动）
 
-**本仓库是唯一源。** 宿主目录（`~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.dsh/skills`、`~/.pi/agent/skills`）只是 symlink 挂载点；`~/.cc-switch/skills` 是历史副本位置，不再是源。
+**本仓库是唯一源，但不自动安装。** `import` / `update` / `sync` 等仓库操作只写仓库文件，从不触碰宿主目录；把 skill 装进哪个 agent 由你显式决定。宿主目录（`~/.claude/skills`、`~/.codex/skills`、`~/.agents/skills`、`~/.dsh/skills`、`~/.pi/agent/skills`）只是 symlink 挂载点；`~/.cc-switch/skills` 是历史副本位置，不再是源。
 
 ```bash
 # 看每个宿主装了什么、哪些还指向旧位置
 python3 scripts/install_skills.py status
 
-# 把所有 skill 链接到所有已存在的宿主（只建/改 symlink，不复制、不改仓库文件）
-python3 scripts/install_skills.py link
-
-# 只装某一个 skill 到某一个宿主
+# 装某一个 skill 到点名的 agent（推荐形式：skill + host 都写明）
 python3 scripts/install_skills.py link --skill grilling --host codex
+
+# 全量操作：把所有 skill 链接到所有已存在的宿主（只建/改 symlink，不复制、不改仓库文件）
+python3 scripts/install_skills.py link
 
 # 把仍指向仓库外的旧链接改指到仓库
 python3 scripts/install_skills.py link --prune
@@ -246,10 +246,9 @@ python3 scripts/sync_upstream.py update
 
 # 应用更新：写文件、推进 skills.json 里的 ref/version、刷新 files 列表
 python3 scripts/sync_upstream.py update --apply
-
-# 应用更新后刷新手工复制过的安装目录（默认 ~/.cc-switch/skills，可用 SKILL_INSTALL_DIR 覆盖）
-python3 scripts/sync_upstream.py update --apply --install
 ```
+
+更新只写仓库文件，不改任何宿主目录；已用 symlink 安装的 skill 在宿主侧即刻生效，其余宿主不受影响。
 
 `check` 输出三种状态：`current`（与上游一致，括号里会标出本地改动数）、`pin behind`（内容没变但上游有更新的 commit）、`drift`（上游内容变了，逐文件列出 update/merge/delete/add/conflict）。
 
@@ -262,7 +261,7 @@ python3 scripts/sync_upstream.py update --apply --install
 - 上游删文件 → 本地也未改则删除；本地改过则记为冲突。
 - 上游新增文件 → 直接加入。
 
-支持的 `upstream.type`：`github`（`repo` + `path` + `ref`，取单个 commit）与 `npm`（`package` + `path` + `version`，校验 sha512 后解包）。`path` 为 `.` 表示仓库/包根目录；`exclude` 在两种类型下都生效。`--install` 只覆盖已存在的安装目录，跳过 symlink 安装（链接本身已跟随源码），加 `--prune` 才删除安装目录里多出的文件。
+支持的 `upstream.type`：`github`（`repo` + `path` + `ref`，取单个 commit）与 `npm`（`package` + `path` + `version`，校验 sha512 后解包）。`path` 为 `.` 表示仓库/包根目录；`exclude` 在两种类型下都生效。
 
 不要手改 pin。跑 `update --apply` 会同时刷新 `files` 和 `synced_at`。
 

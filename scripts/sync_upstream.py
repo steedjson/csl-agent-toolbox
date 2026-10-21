@@ -32,7 +32,9 @@ also the merge base for three-way merges. Local edits are therefore preserved:
 Usage:
     python3 scripts/sync_upstream.py check
     python3 scripts/sync_upstream.py update --apply
-    python3 scripts/sync_upstream.py update --apply --install
+
+This tool never touches host skill directories; installing is an explicit,
+separate step (scripts/install_skills.py).
 
 Exit codes: 0 clean/applied, 1 drift or conflict, 2 error.
 """
@@ -400,7 +402,7 @@ def parse_github_source(source):
     return repo_part, ref, tree_path or None
 
 
-def cmd_import(repo, name, source, subpath, exclude, category, install, git_base, license_id=None):
+def cmd_import(repo, name, source, subpath, exclude, category, git_base, license_id=None):
     """Vendor a third-party skill into the repo and record its upstream pin."""
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
         print(f"error: invalid skill name {name!r} (lowercase letters, digits, hyphens)", file=sys.stderr)
@@ -452,8 +454,7 @@ def cmd_import(repo, name, source, subpath, exclude, category, install, git_base
 
     print(f"imported {name}: {len(files)} file(s) at {revision[:12]}")
     print("next: add a README entry, then run scripts/validate_repo.py")
-    if install:
-        mirror_installs(repo, {name: entry}, [name], prune=False)
+    print("install is manual: python3 scripts/install_skills.py link --skill " + name)
     return 0
 
 
@@ -521,7 +522,7 @@ def update_files_list(skill_dir, entry):
     entry["files"] = sorted(local_files(skill_dir))
 
 
-def cmd_update(repo, only, apply, install, prune, git_base):
+def cmd_update(repo, only, apply, git_base):
     reset_caches()
     data, skills = tracked_skills(repo, only)
     if not skills:
@@ -584,9 +585,6 @@ def cmd_update(repo, only, apply, install, prune, git_base):
             json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
         )
         print(f"\nupdated skills.json for: {', '.join(changed)}")
-
-    if install and changed:
-        mirror_installs(repo, {s["name"]: s for s in skills}, changed, prune)
     return 1 if conflicts else 0
 
 
@@ -605,64 +603,12 @@ def frontmatter_name(skill_dir):
     return None
 
 
-def resolve_install_target(root, name):
-    """Find the install directory for a skill: directory name first, then frontmatter name."""
-    direct = root / name
-    if direct.is_dir():
-        return direct
-    for candidate in sorted(root.iterdir()):
-        if candidate.is_dir() and frontmatter_name(candidate) == name:
-            return candidate
-    return None
-
-
-def mirror_installs(repo, skills, changed, prune=False):
-    """Mirror updated skills into an existing local install directory.
-
-    The repository is the source of truth; this only refreshes copies that a host
-    made by hand. Symlinked installs already track the repository and are skipped.
-    """
-    root = Path(os.environ.get("SKILL_INSTALL_DIR", "~/.cc-switch/skills")).expanduser()
-    if not root.is_dir():
-        print(f"install: skipped (no directory at {root})")
-        return
-    for name in changed:
-        target = resolve_install_target(root, name)
-        if target is None:
-            print(f"install: skipped {name} (no installed copy under {root})")
-            continue
-        if target.is_symlink():
-            print(f"install: skipped {name} (symlink at {target}; link already tracks the source)")
-            continue
-        source = repo / name
-        wanted = set()
-        for path in sorted(source.rglob("*")):
-            if not path.is_file() or path.name in SKIP_NAMES or "__pycache__" in path.parts:
-                continue
-            relative = path.relative_to(source)
-            wanted.add(relative)
-            destination = target / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, destination)
-        pruned = 0
-        if prune:
-            for path in sorted(target.rglob("*")):
-                if not path.is_file() or path.name in SKIP_NAMES or "__pycache__" in path.parts:
-                    continue
-                if path.relative_to(target) not in wanted:
-                    path.unlink()
-                    pruned += 1
-        suffix = f", pruned {pruned} stale file(s)" if pruned else ""
-        print(f"install: synced {name} -> {target}{suffix}")
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("command", choices=["check", "update", "import"])
     parser.add_argument("--skill", action="append", default=[], help="limit to one skill (repeatable)")
     parser.add_argument("--apply", action="store_true", help="write changes and update skills.json")
-    parser.add_argument("--install", action="store_true", help="mirror applied skills into CC_SWITCH_SKILLS")
-    parser.add_argument("--prune", action="store_true", help="with --install, delete files absent from the repo copy")
     parser.add_argument("--source", help="import: owner/repo, GitHub URL, or npm:<package>")
     parser.add_argument("--name", help="import: local skill directory name (defaults to the upstream basename)")
     parser.add_argument("--path", help="import: directory inside the source (default: repo/package root)")
@@ -682,10 +628,10 @@ def main():
                 parser.error("import requires --source")
             name = args.name or import_name(args.source, args.path)
             return cmd_import(repo, name, args.source, args.path, args.exclude,
-                              args.category, args.install, args.git_base, args.license_id)
+                              args.category, args.git_base, args.license_id)
         if args.command == "check":
             return cmd_check(repo, set(args.skill), args.git_base)
-        return cmd_update(repo, set(args.skill), args.apply, args.install, args.prune, args.git_base)
+        return cmd_update(repo, set(args.skill), args.apply, args.git_base)
     except (RuntimeError, urllib.error.URLError, KeyError, tarfile.TarError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

@@ -2,6 +2,14 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-21][no-auto-install] 仓库操作不得自动安装到 agent:安装必须等用户点名宿主
+- 现象: import ego-browser 后顺手跑了 `install_skills.py link`,5 个宿主(含从未用过的 dsh)全被挂上链接;用户明确"本项目不自动将 skill 安装到 agent""当我说安装到哪个 agent 的时候再安装"
+- 根因: `sync_upstream.py` 的 `--install`/`--prune` 把"更新后镜像到安装目录"做成了一等公民,`import` 也带 `--install`,鼓励了"顺手装"的路径;`ln-install-skill` 的 DST 解析含"探测第一个存在的宿主",等于替用户选 agent
+- 修法: 删除 `mirror_installs`/`resolve_install_target`/`--install`/`--prune` 及 `import --install`,`update`/`import` 只写仓库文件并在结尾提示安装命令;`ln-install-skill` DST 改为"用户必须点名,未点名就问,不再探测";AGENTS.md/CLAUDE.md/README 写入"点名才装"政策;撤销已自动安装的 ego-browser 5 条链接
+- 关联: scripts/sync_upstream.py、scripts/test_sync_upstream.py(28 例)、ln-install-skill/SKILL.md:18、AGENTS.md:11、CLAUDE.md:11、README.md「从本仓库安装到宿主(手动)」
+- 复发: 1 次 · 最近 2026-10-21
+- 教训: 安装是改变用户环境的操作,必须由用户点名目标;工具链里任何"顺手也帮你装了"的开关,最终都会被顺手用上
+
 ## [2026-10-21][repo-as-source] 源与副本方向反转:仓库成为唯一源,宿主改 symlink,关掉 CC Switch 自动回写
 - 现象: 此前 `~/.cc-switch/skills` 被当作 SRC、本仓库当副本;4 个宿主里 114 个条目全部指向 `~/.cc-switch/skills`,另有 6 个真实目录副本(agent-reach/reverse-engineer-anything/xerj/grill-me/grilling)与仓库脱钩。CC Switch 自身 `skillSyncMethod: auto` + `resync_skills_to_apps`,下次启动会把 symlink 覆盖回副本,源再次分裂
 - 根因: 仓库缺少"安装"能力,只能手工 `cp`;`ln-install-skill` 默认 SRC 也指向 cc-switch,把历史副本位置当成了源。同时 `agent-model-policy-sync/` 在会话中途从工作区消失但 skills.json 仍引用

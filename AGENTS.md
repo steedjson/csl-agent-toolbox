@@ -8,7 +8,7 @@
 
 This repository is the single source for every skill and plugin. Host skill directories (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, `~/.dsh/skills`, `~/.pi/agent/skills`) are symlink mounts, not sources. `~/.cc-switch/skills` is a legacy copy location and is not a source either.
 
-- Install with `python3 scripts/install_skills.py link` (symlink, never copy); check coverage with `status`, remove with `unlink`.
+- Never install into an agent on your own initiative. Installing happens only when the user names the target agent ("装到 codex"). Until then, `import` / `update` / sync write repository files only and never touch host skill directories. When the user does ask, run `python3 scripts/install_skills.py link --skill <name> --host <agent>` (symlink, never copy); check coverage with `status`, remove with `unlink`.
 - Never `cp` a skill into a host directory: a copy detaches from the repository and silently goes stale.
 - Edit skills here, in place. Changes reach every host immediately through the links.
 - Do not add, edit, or delete skills in `~/.cc-switch/skills`. If a skill exists only there, vendor it here first, then relink.

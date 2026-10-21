@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `my-skills` is source repo for portable Agent Skills. Each top-level directory containing `SKILL.md` is one distributable skill. Skills install per skill (Claude Code: `~/.claude/skills/<skill-name>/`); Codex plugins install via the local marketplace. Registry name is `vlong-skills` (`skills.json`); marketplace name is `vlong-skills-local` (`.agents/plugins/marketplace.json`).
 
-**This repository is the single source of truth.** Host skill directories are symlink mounts; `~/.cc-switch/skills` is a legacy copy location, not a source. Install with `python3 scripts/install_skills.py link`; never `cp` a skill into a host directory, and never author skills in `~/.cc-switch/skills`.
+**This repository is the single source of truth and never auto-installs.** Host skill directories are symlink mounts; `~/.cc-switch/skills` is a legacy copy location, not a source. `import` / `update` / sync write repository files only — install into an agent only when the user names the target, via `python3 scripts/install_skills.py link --skill <name> --host <agent>` (never `cp`), and never author skills in `~/.cc-switch/skills`.
 
 No workflow runtime or test harness exists in this repo. Repository scripts: `scripts/validate_repo.py` (consistency checks), `scripts/sync_upstream.py` (third-party skill import/update), `scripts/install_skills.py` (symlink skills into hosts), `scripts/test_sync_upstream.py` (offline updater tests). Do not document or invoke missing commands.
 
