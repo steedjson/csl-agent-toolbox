@@ -2,6 +2,13 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-22][zcode-adapter] 只按 PATH 检查宿主,漏掉桌面附带运行时与原生配置
+- 现象: 适配矩阵把 ZCode 标为仅 Skill 路径占位,未确认发现,无 MCP 和插件适配
+- 根因: 没有 zcode PATH 命令就认定本机没有运行时;未检查桌面包内 CLI 和配置指南
+- 修法: 以原生 mcp.servers 和 plugins.dirs 补齐配置适配,保留无关设置并防止 MCP 回退被遮蔽;用临时 HOME 中的附带 CLI 验证 Skill 与插件发现
+- 关联: scripts/toolbox.py、scripts/test_toolbox.py、docs/installation.md
+- 教训: 桌面宿主的 CLI、扩展契约和 PATH 安装状态需要分别核实
+
 ## [2026-10-22][docs] 插件登记说明与统一组件目录矛盾
 - 现象: README 仍声明插件不登记到 skills.json,与当前 plugins 数组冲突
 - 根因: 组件管理扩展后,旧 Codex 插件章节未同步更新

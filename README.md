@@ -15,6 +15,7 @@ python3 scripts/toolbox.py list
 python3 scripts/toolbox.py hosts
 python3 scripts/toolbox.py install --skill grill-me --skill coding-discipline --host codex --dry-run
 python3 scripts/toolbox.py install --skill grill-me --skill coding-discipline --host codex
+python3 scripts/toolbox.py install --skill grilling --host zcode --dry-run
 python3 scripts/toolbox.py install --skill grilling --host agents  # 明确安装到用户级共享目录
 python3 scripts/toolbox.py check                               # 所有已登记第三方组件
 python3 scripts/toolbox.py update                              # 预览
@@ -22,6 +23,8 @@ python3 scripts/toolbox.py update --apply                       # 应用到仓�
 ```
 
 `--host` 可重复，`--skill` / `--mcp` / `--plugin` 可重复组合。仓库更新不会新增宿主安装；MCP 和插件通过原生 CLI 或原生配置安装。详细适配矩阵、MCP 格式和更新后的生效方式见 [安装与适配](docs/installation.md)。
+
+ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写入 `~/.zcode/cli/config.json` 的 `mcp.servers`，插件登记到 `plugins.dirs`。不要求另装 `zcode` CLI。
 
 ## Skills 列表
 

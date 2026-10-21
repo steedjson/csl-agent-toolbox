@@ -14,7 +14,7 @@ import install_skills
 import sync_upstream
 
 REPO = Path(__file__).resolve().parent.parent
-MCP_HOSTS = {"codex", "claude", "pi", "omp"}
+MCP_HOSTS = {"codex", "claude", "pi", "omp", "zcode"}
 
 
 def catalog(repo):
@@ -92,8 +92,8 @@ def expand(value, repo, root):
 def mcp_commands(host, name, server, remove=False):
     if host not in MCP_HOSTS:
         raise ValueError(f"{host}: MCP adapter unavailable; supported: {', '.join(sorted(MCP_HOSTS))}")
-    if host == "omp":
-        return []  # OMP has a native config file, but no noninteractive add/remove CLI.
+    if host in {"omp", "zcode"}:
+        return []  # These hosts use native configuration files for MCP installation.
     if remove:
         return [[host, "mcp", "remove", *(["--scope", "user"] if host == "claude" else []), name]]
     if host == "claude":
@@ -132,7 +132,35 @@ def read_mcp_config(path):
     return data
 
 
+def zcode_config_path():
+    return Path.home() / ".zcode/cli/config.json"
+
+
+def read_zcode_config():
+    path = zcode_config_path()
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    if not isinstance(data, dict):
+        raise ValueError(f"invalid ZCode configuration: {path}")
+    mcp = data.get("mcp", {})
+    plugins = data.get("plugins", {})
+    if not isinstance(mcp, dict) or not isinstance(mcp.get("servers", {}), dict):
+        raise ValueError(f"invalid ZCode mcp.servers configuration: {path}")
+    if not isinstance(plugins, dict) or not isinstance(plugins.get("dirs", []), list) or not all(
+        isinstance(item, str) for item in plugins.get("dirs", [])
+    ):
+        raise ValueError(f"invalid ZCode plugins.dirs configuration: {path}")
+    return data
+
+
 def mcp_exists(host, name):
+    if host == "zcode":
+        data = read_zcode_config()
+        if not data.get("mcp", {}).get("servers"):
+            fallback = Path.home() / ".agents/mcp.json"
+            if read_mcp_config(fallback).get("mcpServers"):
+                # Adding the first native server would hide every shared fallback server.
+                raise ValueError("zcode: shared MCP fallback is active; migrate it to mcp.servers before managing MCP")
+        return name in data.get("mcp", {}).get("servers", {})
     if host in {"codex", "claude"}:
         result = subprocess.run([host, "mcp", "get", name], capture_output=True, text=True, timeout=30)
         if result.returncode and not re.search(r"(no .*(server|configuration)|not found|does not exist)", result.stdout + result.stderr, re.I):
@@ -146,22 +174,26 @@ def mcp_exists(host, name):
     return name in read_mcp_config(path).get("mcpServers", {})
 
 
-def write_omp_mcp(name, server, remove):
-    path = omp_config_path().resolve()
-    data = read_mcp_config(path)
-    servers = data.setdefault("mcpServers", {})
+def write_native_mcp(host, name, server, remove):
+    path = (zcode_config_path() if host == "zcode" else omp_config_path()).resolve()
+    data = read_zcode_config() if host == "zcode" else read_mcp_config(path)
+    servers = data.setdefault("mcp", {}).setdefault("servers", {}) if host == "zcode" else data.setdefault("mcpServers", {})
     if remove:
         if name not in servers:
             return
         del servers[name]
     else:
         if name in servers:
-            raise ValueError(f"omp: MCP {name} already exists; remove or rename it first")
+            raise ValueError(f"{host}: MCP {name} already exists; remove or rename it first")
         config = dict(server)
         token = config.pop("bearer_token_env_var", None)
         if token:
             config.setdefault("headers", {})["Authorization"] = f"Bearer {os.environ[token]}"
         servers[name] = config
+    write_native_config(path, data)
+
+
+def write_native_config(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=".toolbox-", dir=path.parent)
     try:
@@ -173,7 +205,33 @@ def write_omp_mcp(name, server, remove):
         Path(temporary).unlink(missing_ok=True)
 
 
+def write_zcode_plugin(root, remove):
+    data = read_zcode_config()
+    plugins = data.setdefault("plugins", {})
+    dirs = plugins.setdefault("dirs", [])
+    matches = [item for item in dirs if install_skills.same_path(Path(item).expanduser(), root)]
+    if remove:
+        if not matches:
+            return
+        plugins["dirs"] = [item for item in dirs if item not in matches]
+    elif not matches:
+        dirs.append(str(root.resolve()))
+    else:
+        return
+    write_native_config(zcode_config_path().resolve(), data)
+
+
 def plugin_commands(repo, root, host, name, remove):
+    if host == "zcode":
+        manifests = [root / directory / "plugin.json"
+                     for directory in (".zcode-plugin", ".claude-plugin", ".codex-plugin")]
+        manifest = next((path for path in manifests if path.is_file()), None)
+        if manifest is None:
+            raise ValueError(f"zcode: {name} requires a native or compatible plugin manifest")
+        metadata = json.loads(manifest.read_text(encoding="utf-8"))
+        if not isinstance(metadata, dict) or metadata.get("name") != name:
+            raise ValueError(f"zcode: plugin manifest name must match {name}")
+        return []
     package = root / "package.json"
     if host in {"pi", "omp"} and package.is_file():
         metadata = json.loads(package.read_text())
@@ -238,6 +296,10 @@ def install(args):
                 else:
                     commands = plugin_commands(REPO, root, host, name, remove)
                 if not args.dry_run and kind != "skill":
+                    if host == "zcode" and kind == "plugin":
+                        data = read_zcode_config()
+                        if not remove and data.get("plugins", {}).get("enabled") is False:
+                            raise ValueError("zcode: plugins are disabled; enable them in ZCode before installing")
                     for command in commands:
                         if shutil.which(command[0]) is None:
                             raise ValueError(f"required host CLI unavailable: {command[0]}")
@@ -270,8 +332,10 @@ def install(args):
             continue
         if args.dry_run:
             print(f"would {args.command}: {kind}:{name} -> {host} (native user configuration; source {root})")
-        elif kind == "mcp" and host == "omp":
-            write_omp_mcp(name, server, remove)
+        elif kind == "mcp" and host in {"omp", "zcode"}:
+            write_native_mcp(host, name, server, remove)
+        elif kind == "plugin" and host == "zcode":
+            write_zcode_plugin(root, remove)
         else:
             run_commands(commands)
     return status
@@ -326,7 +390,7 @@ def main(argv=None):
         if args.command == "hosts":
             for host, path in install_skills.HOSTS.items():
                 plugins = "native manifest required" if host in MCP_HOSTS else "unavailable"
-                verified = " (runtime discovery unverified)" if host in {"dsh", "zcode", "cow"} else ""
+                verified = " (runtime discovery unverified)" if host in {"dsh", "cow"} else ""
                 print(f"{host}: skills={install_skills.host_paths([host])[host]}{verified}; MCP={'yes' if host in MCP_HOSTS else 'unavailable'}; plugins={plugins}")
             return 0
         if args.command == "list":

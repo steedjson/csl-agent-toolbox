@@ -42,8 +42,11 @@ class ToolboxTests(unittest.TestCase):
                         mock.patch.object(toolbox.install_skills, "HOSTS", {
                             "codex": str(self.host), "claude": str(self.root / "claude-skills"),
                             "omp": str(self.root / "omp-skills"), "pi": str(self.root / "pi-skills"),
+                            "zcode": str(self.root / "zcode-skills"),
                             "agents": str(self.root / "shared-skills"),
-                        })]
+                        }),
+                        mock.patch.object(toolbox, "zcode_config_path", return_value=self.root / "zcode/config.json"),
+                        mock.patch.object(Path, "home", return_value=self.root)]
         for patch in self.patches:
             patch.start()
 
@@ -189,6 +192,110 @@ class ToolboxTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"PI_CODING_AGENT_DIR": str(root)}):
             self.assertEqual(toolbox.main(["install", "--mcp", "echo-server", "--host", "omp"]), 2)
         self.assertEqual(path.read_text(), '[]')
+
+    def test_zcode_skill_link_and_unlink(self):
+        args = ["--skill", "demo", "--host", "zcode"]
+        self.assertEqual(toolbox.main(["install", *args]), 0)
+        link = self.root / "zcode-skills/demo"
+        self.assertEqual(link.resolve(), (self.repo / "demo").resolve())
+        self.assertEqual(toolbox.main(["uninstall", *args]), 0)
+        self.assertFalse(link.exists())
+        self.assertTrue((self.repo / "demo/SKILL.md").exists())
+
+    def test_zcode_stdio_merge_duplicate_and_remove(self):
+        path = toolbox.zcode_config_path()
+        path.parent.mkdir()
+        original = {"model": {"keep": True}, "plugins": {"dirs": ["/keep/plugin"]},
+                    "mcp": {"enabled": True, "servers": {"existing": {"command": "keep"}}}}
+        path.write_text(json.dumps(original))
+        args = ["--mcp", "echo-server", "--host", "zcode"]
+        self.assertEqual(toolbox.main(["install", *args]), 0)
+        data = json.loads(path.read_text())
+        self.assertEqual(data["mcp"]["servers"]["echo-server"], self.server)
+        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+        saved = path.read_bytes()
+        self.assertEqual(toolbox.main(["install", *args]), 2)
+        self.assertEqual(path.read_bytes(), saved)
+        self.assertEqual(toolbox.main(["uninstall", *args, "--dry-run"]), 0)
+        self.assertEqual(path.read_bytes(), saved)
+        self.assertEqual(toolbox.main(["uninstall", *args]), 0)
+        self.assertEqual(json.loads(path.read_text()), original)
+        saved = path.read_bytes()
+        self.assertEqual(toolbox.main(["uninstall", *args]), 0)
+        self.assertEqual(path.read_bytes(), saved)
+
+    def test_zcode_http_normalizes_transport_and_bearer_without_output(self):
+        self.write_server({"type": "streamable-http", "url": "https://example.invalid/mcp",
+                           "headers": {"X-Keep": "yes"}, "bearer_token_env_var": "ZCODE_TEST_TOKEN"})
+        out = io.StringIO()
+        with mock.patch.dict(os.environ, {"ZCODE_TEST_TOKEN": "private-token"}), contextlib.redirect_stdout(out):
+            self.assertEqual(toolbox.main(["install", "--mcp", "echo-server", "--host", "zcode"]), 0)
+        server = json.loads(toolbox.zcode_config_path().read_text())["mcp"]["servers"]["echo-server"]
+        self.assertEqual(server, {"type": "http", "url": "https://example.invalid/mcp",
+                                  "headers": {"X-Keep": "yes", "Authorization": "Bearer private-token"}})
+        self.assertNotIn("private-token", out.getvalue())
+
+    def test_zcode_dry_run_does_not_create_configuration(self):
+        self.assertEqual(toolbox.main(["install", "--skill", "demo", "--mcp", "echo-server",
+                                       "--plugin", "bridge", "--host", "zcode", "--dry-run"]), 0)
+        self.assertFalse(toolbox.zcode_config_path().exists())
+        self.assertFalse((self.root / "zcode-skills").exists())
+
+    def test_zcode_plugin_directory_is_idempotent_and_preserves_state(self):
+        path = toolbox.zcode_config_path()
+        path.parent.mkdir()
+        original = {"plugins": {"enabled": True, "dirs": ["/keep/plugin"], "enabledPlugins": {"keep": True}},
+                    "mcp": {"servers": {"keep": {"command": "keep"}}}}
+        path.write_text(json.dumps(original))
+        args = ["--plugin", "bridge", "--host", "zcode"]
+        for _ in range(2):
+            self.assertEqual(toolbox.main(["install", *args]), 0)
+        data = json.loads(path.read_text())
+        self.assertEqual(data["plugins"]["dirs"], ["/keep/plugin", str(self.plugin.resolve())])
+        self.assertEqual(toolbox.main(["uninstall", *args, "--dry-run"]), 0)
+        self.assertEqual(json.loads(path.read_text()), data)
+        self.assertEqual(toolbox.main(["uninstall", *args]), 0)
+        self.assertEqual(json.loads(path.read_text()), original)
+
+    def test_zcode_native_manifest_and_invalid_plugin_fail_before_skill_write(self):
+        (self.plugin / ".codex-plugin/plugin.json").unlink()
+        (self.plugin / ".zcode-plugin").mkdir()
+        manifest = self.plugin / ".zcode-plugin/plugin.json"
+        manifest.write_text('{"name":"bridge"}')
+        self.assertEqual(toolbox.plugin_commands(self.repo, self.plugin, "zcode", "bridge", False), [])
+        manifest.write_text('{"name":"other"}')
+        self.assertEqual(toolbox.main(["install", "--skill", "demo", "--plugin", "bridge",
+                                       "--host", "zcode"]), 2)
+        self.assertFalse((self.root / "zcode-skills").exists())
+
+    def test_zcode_invalid_configuration_fails_before_skill_write(self):
+        path = toolbox.zcode_config_path()
+        path.parent.mkdir()
+        for original in ('[]', '{"mcp":[]}', '{"mcp":{"servers":[]}}', '{"plugins":{"dirs":"bad"}}'):
+            path.write_text(original)
+            self.assertEqual(toolbox.main(["install", "--skill", "demo", "--mcp", "echo-server",
+                                           "--host", "zcode"]), 2)
+            self.assertEqual(path.read_text(), original)
+            self.assertFalse((self.root / "zcode-skills").exists())
+
+    def test_zcode_disabled_plugins_are_not_enabled_implicitly(self):
+        path = toolbox.zcode_config_path()
+        path.parent.mkdir()
+        path.write_text('{"plugins":{"enabled":false}}')
+        self.assertEqual(toolbox.main(["install", "--skill", "demo", "--plugin", "bridge",
+                                       "--host", "zcode"]), 2)
+        self.assertFalse((self.root / "zcode-skills").exists())
+        self.assertEqual(json.loads(path.read_text()), {"plugins": {"enabled": False}})
+
+    def test_zcode_shared_mcp_fallback_is_not_silently_hidden(self):
+        fallback = self.root / ".agents/mcp.json"
+        fallback.parent.mkdir()
+        fallback.write_text('{"mcpServers":{"shared":{"command":"keep"}}}')
+        with mock.patch.object(toolbox.Path, "home", return_value=self.root):
+            self.assertEqual(toolbox.main(["install", "--skill", "demo", "--mcp", "echo-server",
+                                           "--host", "zcode"]), 2)
+        self.assertFalse(toolbox.zcode_config_path().exists())
+        self.assertFalse((self.root / "zcode-skills").exists())
 
 
 if __name__ == "__main__":

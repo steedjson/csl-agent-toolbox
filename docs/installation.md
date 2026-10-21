@@ -39,14 +39,34 @@ python3 scripts/toolbox.py uninstall --skill grill-me --host codex --dry-run
 | `omp` | `~/.omp/agent/skills` | 原生 `mcp.json` 合并写入，保留其他配置 | `package.json` 含名称及 `omp`/`pi` 对象；`omp plugin link/uninstall` |
 | `agents` | `~/.agents/skills` | 无共享适配 | 无共享适配 |
 | `dsh` | `~/.dsh/skills` | 未适配 | 未适配 |
-| `zcode` | `~/.zcode/skills` | 未适配 | 未适配 |
+| `zcode` | `~/.zcode/skills`，隔离 CLI 发现已确认 | `~/.zcode/cli/config.json` 的 `mcp.servers` 合并写入 | 原生或兼容 manifest；本地目录登记到 `plugins.dirs` |
 | `cow` | `~/cow/skills` | 未适配 | 未适配 |
 
-DSH、ZCode、Cow 保留用户已有目录约定；本机没有对应 CLI，未确认运行时发现。未知插件格式直接报错，不自动转换 hooks 或扩展代码。现有 `openwolf-codegraph-bridge` 只有 Codex manifest，因此当前只支持 Codex。
+DSH、Cow 保留用户已有目录约定；本机没有对应 CLI，未确认运行时发现。未知插件格式直接报错，不自动转换 hooks 或扩展代码。现有 `openwolf-codegraph-bridge` 使用 Codex manifest，Codex 支持原生安装；ZCode 原生校验通过，但其 Hook 行为未做会话验收。
 
 Skill 路径尊重 `CODEX_HOME`、`CLAUDE_CONFIG_DIR`、`PI_CODING_AGENT_DIR`；OMP 也尊重 `PI_CONFIG_DIR`。OMP 命名 profile 需显式设置 `PI_CODING_AGENT_DIR` 指向该 profile 的 agent 目录，入口不猜测 profile。
 
 保留 Codex marketplace 标识 `vlong-skills-local` 以兼容已有安装。项目和远程仓库使用 `csl-agent-toolbox`；旧 `my-skills` 路径作为兼容链接保留，已有宿主链接和 marketplace 来源继续可达。
+
+## ZCode
+
+安装器直接合并用户配置，不依赖 `zcode` 可执行文件。Skill 仍通过软链接安装到 `~/.zcode/skills`；不触碰用户级共享目录。
+
+```bash
+python3 scripts/toolbox.py install --skill grilling --host zcode --dry-run
+python3 scripts/toolbox.py install --skill grilling --host zcode
+python3 scripts/toolbox.py status --host zcode
+python3 scripts/toolbox.py install --plugin openwolf-codegraph-bridge --host zcode --dry-run
+python3 scripts/toolbox.py uninstall --skill grilling --host zcode --dry-run
+```
+
+MCP 使用 `~/.zcode/cli/config.json` → `mcp.servers.<name>`。支持本仓库的 stdio、HTTP 配置，`streamable-http` 转为原生 `http`；Bearer 环境变量展开为 `headers.Authorization`。保留其他 server、provider、hooks、插件和其他配置；同名 server 拒绝覆盖；配置原子替换，文件权限为 `0600`。如果当前使用 `~/.agents/mcp.json` 回退，添加首个原生 server 会遮蔽该回退，因此安装器拒绝操作，要求先自行迁移到 `mcp.servers`。
+
+插件接受 `.zcode-plugin/plugin.json`、`.claude-plugin/plugin.json`、`.codex-plugin/plugin.json`，按此顺序选择，manifest 名称必须与登记组件一致。安装把源码绝对路径加入 `plugins.dirs`，重复安装不重复登记；卸载只移除匹配目录，不删除插件源码或其他插件配置。`plugins.enabled: false` 时安装报错，不自行开启全局插件开关。此方式属于本地源码加载，不写 marketplace 缓存；插件 Hook、MCP 模板和宿主 API 是否兼容仍需逐个验收。
+
+2026-10-22 使用本机 ZCode Desktop `3.16.2`（附带 CLI `0.17.0`）在临时 HOME、临时仓库验证：Skill 链接可被 `skills list --json` 发现；原生插件通过 `plugins validate`，出现在 `plugins list`，贡献的 Skill 可被发现；卸载保留源码。已有 bridge 的原生 validate 返回 `ok: true`、无诊断。MCP 配置读写、stdio/HTTP/Bearer、判重、预览、无关配置保留和错误配置拒绝由离线回归测试覆盖。
+
+未验证真实 MCP 连接和插件 Hook 执行。直接调用桌面附带 CLI 的 `/mcp list` 探针在 provider 初始化阶段因缺少相邻内置 provider 配置而退出，未到 MCP 握手；这不影响已完成的插件和 Skill 清单验证。实际安装后在 ZCode 新会话的 Settings → MCP / Plugin Management / Skills 验收；宿主开关和桌面托管配置可能影响生效。
 
 ## 独立 MCP 包
 
@@ -79,7 +99,7 @@ Skill 路径尊重 `CODEX_HOME`、`CLAUDE_CONFIG_DIR`、`PI_CODING_AGENT_DIR`；
 }
 ```
 
-支持 `stdio`、`http`、`streamable-http`，以及 `command`、`args`、`env`、`url`、`headers`、`bearer_token_env_var`；未知字段报错。Codex 原生 add CLI 无自定义 HTTP headers 参数，含此字段时拒绝该组合；Pi、Claude、OMP 支持 headers。入口不转换 OAuth、SSE 和其他扩展字段，此类配置使用宿主原生工具维护。
+支持 `stdio`、`http`、`streamable-http`，以及 `command`、`args`、`env`、`url`、`headers`、`bearer_token_env_var`；未知字段报错。Codex 原生 add CLI 无自定义 HTTP headers 参数，含此字段时拒绝该组合；Pi、Claude、OMP、ZCode 支持 headers。入口不转换 OAuth、SSE 和其他扩展字段，此类配置使用宿主原生工具维护。
 
 `${COMPONENT_ROOT}` 指包目录，`${TOOLBOX_ROOT}` 指仓库，其他 `${NAME}` 从环境读取。安装时变量缺失或 stdio 运行器缺失会在写入前报错。密钥不放入仓库；宿主可能把展开的值保存到自己的用户配置，入口不打印这些值。
 
@@ -117,4 +137,5 @@ Skill 和本地链接扩展读取仓库；原生插件缓存、已启动的 MCP 
 - [OpenAI Skills](https://developers.openai.com/codex/skills)、[MCP](https://developers.openai.com/codex/mcp)、[配置目录](https://developers.openai.com/codex/config-advanced)、[插件打包](https://developers.openai.com/plugins/build/plugins)。Codex 自有 Skill 目录来自本次运行清单；最新官方目录表列出共享目录。
 - [Claude Skills](https://code.claude.com/docs/en/skills)、[MCP](https://code.claude.com/docs/en/mcp)、[插件格式](https://code.claude.com/docs/en/plugins-reference)。
 - [OMP Skills](https://github.com/can1357/oh-my-pi/blob/main/docs/skills.md)、[MCP](https://github.com/can1357/oh-my-pi/blob/main/docs/mcp-config.md)、[插件安装](https://github.com/can1357/oh-my-pi/blob/main/docs/plugin-manager-installer-plumbing.md)。
+- ZCode 官方 [MCP](https://github.com/zai-org/ZCode/blob/main/apps/zcode-cli/docs/usage/07-mcp.md)、[Skills](https://github.com/zai-org/ZCode/blob/main/apps/zcode-cli/docs/usage/08-skills.md)、[本地插件](https://github.com/zai-org/ZCode/blob/main/apps/zcode-cli/docs/usage/10-plugins.md)；本机桌面安装包 `Resources/glm/packages/zcode-guide-plugin/skills/` 配置指南与诊断文档。
 - 本机 CLI help：Codex `0.163.0-alpha.10.2`、Claude `2.1.306`、OMP `18.12.5`、Pi `@earendil-works/pi-coding-agent 1.3.0`；Pi 随安装包提供的 configuration、skills、mcp、packages 文档。
