@@ -267,7 +267,7 @@
     {
       "name": "ln-install-skill",
       "category": "skill-management",
-      "description": "Install, list, verify, or uninstall agent skills via symlinks between the my-skills repository and any host skills directory — DSH, Claude Code, Codex, pi, omp, cross-tool, or project-local. The target host must be named by the user; never probe or pick one on your own. Only touches symlinks.",
+      "description": "Install, list, verify, or uninstall agent skills via symlinks between the my-skills repository and any host skills directory — DSH, Claude Code, Codex, pi, omp, zcode, cross-tool, or project-local. The target host must be named by the user; never probe or pick one on your own. Only touches symlinks.",
       "files": [
         "SKILL.md"
       ]

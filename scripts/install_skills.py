@@ -33,6 +33,8 @@ HOSTS = {
     "dsh": "~/.dsh/skills",
     "pi": "~/.pi/agent/skills",
     "omp": "~/.omp/agent/skills",
+    "zcode": "~/.zcode/skills",
+    "cow": "~/cow/skills",
 }
 
 

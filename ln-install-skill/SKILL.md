@@ -18,7 +18,7 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 - **Target directory** `DST` = the destination host's skills directory. The user must name the agent ("装到 codex" / "install to claude"). Never pick a host on your own; if the request has no target, ask which agent before doing anything.
   1. Path or host explicitly given by the user — use it.
   2. "project" / "in this repo" → `<repo>/.claude/skills` or `<repo>/.agents/skills`.
-  3. No target named → ask; do not probe. Known hosts: Claude Code `~/.claude/skills`, Codex `~/.codex/skills`, cross-tool `~/.agents/skills`, DSH `~/.dsh/skills`, pi `~/.pi/agent/skills`, omp `~/.omp/agent/skills`.
+  3. No target named → ask; do not probe. Known hosts: Claude Code `~/.claude/skills`, Codex `~/.codex/skills`, cross-tool `~/.agents/skills`, DSH `~/.dsh/skills`, pi `~/.pi/agent/skills`, omp `~/.omp/agent/skills`, zcode `~/.zcode/skills`.
 - **Link name** = the source skill's directory basename (e.g. `SRC/grilling` → `DST/grilling`).
   - If the source `SKILL.md` frontmatter `name` differs from the directory basename, **report the difference** but still link by directory basename. (hosts identify a skill by its frontmatter `name`; the link name only needs to be unique in `DST`.)
 
