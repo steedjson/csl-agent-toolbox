@@ -93,6 +93,10 @@
 
 落地页、作品集与改版的反模板化前端设计方向：先读 brief 推断设计意图，再选设计系统与三个设计旋钮，校准排版/配色/布局，最后过一遍反 AI 套路预检清单。上游为 `tasteskill`（npm `natureco-cli` 内的 `skills/taste-skill`），按 `skills.json` 的 `upstream` 固定版本同步。
 
+#### [ego-browser](./ego-browser/)
+
+面向 AI Agent 的 Chromium 浏览器自动化：打开/操作网站、填表、点按钮、截图、提取页面数据、用已登录站点完成 Web 测试与 QA。用法以 `ego-browser skill` 输出的指南为准（随安装版本变化）；`references/install.md` 覆盖安装与升级，`learnings/` 内置 GitHub/Google/X 站点的沉淀工具脚本。上游为 [citrolabs/ego-lite](https://github.com/citrolabs/ego-lite)（MIT），即 `npx skills add citrolabs/ego-lite` 背后的同一目录，按 `skills.json` 的 `upstream` 固定 commit 同步。
+
 ### 视觉感知（visual-perception）
 
 #### [perceived-form](./perceived-form/)

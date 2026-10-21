@@ -494,6 +494,43 @@
         "license": "MIT",
         "synced_at": "2026-10-20"
       }
+    },
+    {
+      "name": "ego-browser",
+      "category": "browser-and-ui",
+      "description": "When you need a browser, read this Skill by default. Use it to open and operate websites, fill forms, click buttons, take screenshots, extract page data, sign in, and perform other browser automation tasks, as well as web app testing, dogfooding, QA, bug investigation, and app-quality review. ego-br",
+      "files": [
+        "SKILL.md",
+        "agents/openai.yaml",
+        "assets/composer-icon.png",
+        "assets/logo.png",
+        "learnings/github/browser-tools/repo-stats.js",
+        "learnings/github/manifest.json",
+        "learnings/github/notes/overview.md",
+        "learnings/github/tools/open-issues.js",
+        "learnings/github/tools/search-repos.js",
+        "learnings/google/browser-tools/autocomplete.js",
+        "learnings/google/manifest.json",
+        "learnings/google/notes/overview.md",
+        "learnings/google/tools/search-extract.js",
+        "learnings/x-com/browser-tools/extract-post.js",
+        "learnings/x-com/manifest.json",
+        "learnings/x-com/notes/overview.md",
+        "learnings/x-com/notes/timeline.md",
+        "learnings/x-com/tools/search-users.js",
+        "learnings/x-com/tools/timeline.js",
+        "references/clearing-state.md",
+        "references/install.md",
+        "scripts/install.sh"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "citrolabs/ego-lite",
+        "path": "skills/ego-browser",
+        "ref": "d392204d1ea1a8027a591ab2b0129c2e11d85f26",
+        "license": "MIT",
+        "synced_at": "2026-10-21"
+      }
     }
   ]
 }
