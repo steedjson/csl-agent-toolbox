@@ -5,37 +5,11 @@
   "repo": "https://github.com/steedjson/my-skills",
   "skills": [
     {
-      "name": "ccs-restore-efforts",
-      "category": "models-and-routing",
-      "description": "Restore model-dependent reasoning efforts, verified context windows, and Fast Speed metadata for Codex models in CC Switch catalog and config.toml",
-      "files": [
-        "SKILL.md",
-        "scripts/restore_efforts.py",
-        "tests/test_restore_efforts.py"
-      ]
-    },
-    {
       "name": "codexradar-model-advisor",
       "category": "models-and-routing",
       "description": "Live CodexRadar measurements and OpenAI Codex model/effort recommendations",
       "files": [
         "SKILL.md"
-      ]
-    },
-    {
-      "name": "model-delegate",
-      "category": "models-and-routing",
-      "description": "Auto-compaction-aware Codex delegation with percentage context gating, passive read-only modes, top-level handoff, staged review, and optional live E2E",
-      "files": [
-        "SKILL.md",
-        "references/compact-coordinator.md",
-        "references/context-gate.md",
-        "references/delegation-capsule.md",
-        "references/log-analysis.md",
-        "references/passive-return.md",
-        "references/passive-session.md",
-        "references/staged-review.md",
-        "scripts/validate_contract.py"
       ]
     },
     {
@@ -90,15 +64,6 @@
       "name": "django-development",
       "category": "framework-workflows",
       "description": "Discovery-first Django backend workflow for native Django, DRF, and Ninja projects",
-      "files": [
-        "SKILL.md",
-        "agents/openai.yaml"
-      ]
-    },
-    {
-      "name": "django-personal-development",
-      "category": "framework-workflows",
-      "description": "Personal Django development workflow for new projects, legacy changes, and gradual convention migration",
       "files": [
         "SKILL.md",
         "agents/openai.yaml"
@@ -302,18 +267,9 @@
     {
       "name": "ln-install-skill",
       "category": "skill-management",
-      "description": "Install, list, verify, or uninstall agent skills via symlinks between a local source directory and any host skills directory — DSH, Claude Code, pi, cross-tool, or project-local (default SRC ~/.cc-switch/skills, DST user-specified or auto-probed)",
+      "description": "Install, list, verify, or uninstall agent skills via symlinks between the my-skills repository and any host skills directory — DSH, Claude Code, pi, omp, cross-tool, or project-local (DST user-specified or auto-probed)",
       "files": [
         "SKILL.md"
-      ]
-    },
-    {
-      "name": "agent-model-policy-sync",
-      "category": "models-and-routing",
-      "description": "同步项目级子智能体模型与 reasoning effort 策略到 AGENTS.md 或用户指定的 Agent 指令文件，支持幂等更新、预览和安全路径检查",
-      "files": [
-        "SKILL.md",
-        "scripts/sync_policy.py"
       ]
     },
     {

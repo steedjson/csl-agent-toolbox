@@ -1,13 +1,13 @@
 ---
 name: csl-django42-project-init
-description: 按个人 Django 4.2 基线(钉 Django 4.2.16 + stdkit v1.2.6,提炼自 wework/backend)初始化新后端项目:一次性渲染熟悉的目录结构、common 通用基建(视图/Service/认证中间件/utils)、内嵌 stdkit/ 基架、质量门禁(Makefile + pre-commit)、docs 与 AGENTS.md 骨架,并按需生成业务 app。Use when 用户要新建 Django 项目、初始化 Django 后端、按 wework 结构/个人标准搭项目骨架、初始化 Django 4.2 后端、生成 csl 流水线可接入的新 Django 仓库。存量项目改造不适用(走 /csl-init-project 或 django-personal-development);Django 5.x 基线是另一套模板,不归本技能。
+description: 按个人 Django 4.2 基线(钉 Django 4.2.16 + stdkit v1.2.6,提炼自 wework/backend)初始化新后端项目:一次性渲染目录结构、common 通用基建(视图/Service/认证中间件/utils)、内嵌 stdkit/ 基架、质量门禁(Makefile + pre-commit)、docs 与 AGENTS.md 骨架,并按需生成业务 app。Use when 用户要新建 Django 项目、初始化 Django 后端、按 wework 结构/个人标准搭项目骨架、初始化 Django 4.2 后端、生成 csl 流水线可接入的新 Django 仓库。存量项目改造不适用(走 /csl-init-project);Django 5.x 基线是另一套模板,不归本技能。
 ---
 
 # csl-django42-project-init — Django 项目基线初始化
 
 ## 概述
 
-把 wework/backend 沉淀的个人 Django 项目基线(目录结构、common 通用工具、模型与认证约定、质量门禁)固化成脱敏模板,新项目一条命令渲染成型,结构不漂移、基建不重拷。初始化完成后,日常开发规范交棒给项目级 AGENTS.md 与 `django-personal-development` 技能。
+把 wework/backend 沉淀的个人 Django 项目基线(目录结构、common 通用工具、模型与认证约定、质量门禁)固化成脱敏模板,新项目一条命令渲染成型,结构不漂移、基建不重拷。初始化完成后,日常开发规范交棒给项目级 AGENTS.md。
 
 ## 资源指南
 
@@ -69,7 +69,7 @@ make migrate && make dev
 
 ## 边界
 
-- 只初始化新项目;存量项目扫描用 `/csl-init-project`,日常开发规范用 `django-personal-development`。
+- 只初始化新项目;存量项目扫描用 `/csl-init-project`。
 - 模板是**脱敏基线**:不含真实密钥与令牌;`SECRET_KEY`/`JWT_SECRET` 均为占位值,生产在 settings_local.py 覆盖。
 - 不自动安装依赖、不跑 migrate、不提交推送——除非用户明确授权。
 - 基线不含业务集成(企微/钉钉/CRM/up_center/薪酬等);需要时按 `references/project-blueprint.md` 的可选扩展清单对照 wework 源搬移,不凭记忆重写。

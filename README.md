@@ -17,20 +17,6 @@
 
 读取 CodexRadar 当前实测数据与 15 天社区评分历史，为 OpenAI Codex 模型和 reasoning effort 提供质量、速度、成本建议。仅推荐当前有实测数据的组合，支持 Codex、Claude Code 和其他 Agent Skills 兼容宿主。
 
-#### [agent-model-policy-sync](./agent-model-policy-sync/)
-
-把子智能体模型与 reasoning effort 策略幂等写入项目 `AGENTS.md` 或用户指定的 Agent 指令文件；支持 dry-run、标记区块更新和路径安全检查。
-
-#### [model-delegate](./model-delegate/)
-
-使用 Codex 原生子智能体和 App 顶层任务建立自动压缩感知的低上下文成本分工。`CONTEXT_GATE` 按 40%/55%/70%/85% 分层选择双轮、单轮、交接或压缩 checkpoint，并校验有效窗口、自动压缩阈值、样本新鲜度和安全余量。核心不依赖特定供应商或计费数据库。
-
-固定静态门禁：`python3 model-delegate/scripts/validate_contract.py`。它不调用模型或创建任务；真实委派 E2E 只在用户明确确认后运行。运行环境没有 usage 数据时正常完成，并把费用节省标记为未验证。
-
-#### [ccs-restore-efforts](./ccs-restore-efforts/)
-
-当 CC Switch 同步模型目录或重写 `config.toml` 后，模型依赖的 `Effort` 和 `Speed` 元数据可能回归。运行 `scripts/restore_efforts.py restore-ui` 会按 Codex Auto Review、DeepSeek V4、Grok 4.5/4.6 与 GPT-5.6/5.5/5.4/5.4-mini/5.2 官方档位、上下文和输出上限收敛，并给其他模型补回通用推理档位、`Fast / priority` 速度档位及丢失的 `model` 行。
-
 #### [grok-build-cli](./grok-build-cli/)
 
 让 Codex 调用本机 `grok` CLI：检查可用模型与凭据、选择单轮或 agentic 调用、轮询长任务并返回结果。只覆盖调用机制，不规定任务内容。凭据可以是 `~/.grok/config.toml` 模型 key、已缓存的 `auth.json`，或环境变量 `XAI_API_KEY`；不必先 `grok login`。源： [Pluviobyte/rnskill](https://github.com/Pluviobyte/rnskill/tree/main/skills/grok-build-cli)，可用性检查已按官方认证方式放宽。
@@ -63,17 +49,13 @@
 
 在任意 Django 后端项目中发现并遵循现有约定，完成实现、调试、审查或审计。覆盖原生 Django、Django REST Framework、Django Ninja，以及 API、Service/用例、模型、迁移、Admin、Form、后台任务、信号、管理命令、设置和测试。
 
-#### [django-personal-development](./django-personal-development/)
-
-按个人工程规范处理 Django 新项目、旧项目修改和渐进式规范迁移；以 `sugon-webwork-backend` 作为个人习惯参考项目。
-
 #### [django-test-sandbox](./django-test-sandbox/)
 
 给 Django 项目落地实测验证过的内存测试沙盒（SQLite `:memory:` + 禁迁移 + PG 字段建表垫片 + 探针门禁）：纯逻辑测试不连库，ORM 查询语义测试在内存 SQLite 真实执行；含可选的 `manage.py test` 入口接管模板。已在 Django 4.2.16 + pytest-django 4.9 + pytest 8.3 实测（2026-10，phekda 首跑）。
 
 #### [csl-django42-project-init](./csl-django42-project-init/)
 
-按个人 Django 项目基线（提炼自 wework/backend + stdkit v1.2.6 源码快照）一次性初始化新后端项目：确定性渲染熟悉的 `apps/ + common/ + 配置包` 目录结构、View/Service/JWT 认证中间件通用基建、uuid 主键 + 软删除模型基座、内嵌 `stdkit/` 私有基础库（传递依赖固化在 requirements，不入库）、`make check/verify` 质量门禁、docs 与 AGENTS.md 骨架，并按需生成业务 app 骨架。只管新项目初始化；存量项目扫描走 `/csl-init-project`，日常开发规范走 `django-personal-development`。
+按个人 Django 项目基线（提炼自 wework/backend + stdkit v1.2.6 源码快照）一次性初始化新后端项目：确定性渲染熟悉的 `apps/ + common/ + 配置包` 目录结构、View/Service/JWT 认证中间件通用基建、uuid 主键 + 软删除模型基座、内嵌 `stdkit/` 私有基础库（传递依赖固化在 requirements，不入库）、`make check/verify` 质量门禁、docs 与 AGENTS.md 骨架，并按需生成业务 app 骨架。只管新项目初始化；存量项目扫描走 `/csl-init-project`。
 
 ### 代码质量（code-quality）
 
@@ -291,27 +273,12 @@ my-skills/
 │       └── marketplace.json
 ├── codexradar-model-advisor/
 │   └── SKILL.md
-├── model-delegate/
-│   ├── SKILL.md
-│   ├── references/
-│   │   ├── compact-coordinator.md
-│   │   ├── context-gate.md
-│   │   ├── delegation-capsule.md
-│   │   ├── log-analysis.md
-│   │   ├── passive-return.md
-│   │   ├── passive-session.md
-│   │   └── staged-review.md
-│   └── scripts/validate_contract.py
 ├── custom-image-gen/
 │   ├── SKILL.md
 │   └── agents/openai.yaml
 ├── django-development/
 │   ├── SKILL.md
 │   └── agents/openai.yaml
-├── ccs-restore-efforts/
-│   ├── SKILL.md
-│   ├── scripts/
-│   └── tests/
 ├── browser-ui-reader/
 │   ├── SKILL.md
 │   ├── scripts/

@@ -1,11 +1,11 @@
 ---
 name: ln-install-skill
-description: "Link agent skills with symlinks between a source skill directory and any host's skills directory — install, list, verify, uninstall. Hosts: DSH (~/.dsh/skills), Claude Code (~/.claude/skills), pi (~/.pi/agent/skills), cross-tool (~/.agents/skills), project-local skill directories. Use when the user wants to link/install a skill from a local directory into any agent host, list available source skills, check whether a linked skill is valid, or remove a linked skill. Only touches symlinks — never source files — so it is low-risk and reversible."
+description: "Link agent skills with symlinks between a source skill directory and any host's skills directory — install, list, verify, uninstall. Hosts: DSH (~/.dsh/skills), Claude Code (~/.claude/skills), pi (~/.pi/agent/skills), omp (~/.omp/agent/skills), cross-tool (~/.agents/skills), project-local skill directories. Use when the user wants to link/install a skill from a local directory into any agent host, list available source skills, check whether a linked skill is valid, or remove a linked skill. Only touches symlinks — never source files — so it is low-risk and reversible."
 ---
 
 # ln-install-skill
 
-Install, list, verify, or uninstall skills of **any Agent-Skills-compatible host** (DSH, Claude Code, pi, Codex, …) by creating **symlinks** ("ln") from a source skills directory into the host's skills directory. Hosts discover a skill from its `SKILL.md`; symlinking the source skill directory into the target is enough — no copy, no build.
+Install, list, verify, or uninstall skills of **any Agent-Skills-compatible host** (DSH, Claude Code, pi, omp, Codex, …) by creating **symlinks** ("ln") from a source skills directory into the host's skills directory. Hosts discover a skill from its `SKILL.md`; symlinking the source skill directory into the target is enough — no copy, no build.
 
 This skill **only ever touches symlinks**. It never deletes, moves, or edits the source skill directories or their `SKILL.md` files.
 
@@ -18,8 +18,8 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 - **Target directory** `DST` = the destination host's skills directory. Resolve in order:
   1. Path explicitly given by the user — use it.
   2. "project" / "in this repo" → `<repo>/.claude/skills` or `<repo>/.agents/skills`.
-  3. Probe, take the first existing: `~/.claude/skills` → `~/.codex/skills` → `~/.agents/skills` → `~/.dsh/skills` → `~/.pi/agent/skills`.
-  4. None exists → ask, or `mkdir -p` the one they name. Known hosts: Claude Code `~/.claude/skills`, Codex `~/.codex/skills`, cross-tool `~/.agents/skills`, DSH `~/.dsh/skills`, pi `~/.pi/agent/skills`.
+  3. Probe, take the first existing: `~/.claude/skills` → `~/.codex/skills` → `~/.agents/skills` → `~/.dsh/skills` → `~/.pi/agent/skills` → `~/.omp/agent/skills`.
+  4. None exists → ask, or `mkdir -p` the one they name. Known hosts: Claude Code `~/.claude/skills`, Codex `~/.codex/skills`, cross-tool `~/.agents/skills`, DSH `~/.dsh/skills`, pi `~/.pi/agent/skills`, omp `~/.omp/agent/skills`.
 - **Link name** = the source skill's directory basename (e.g. `SRC/grilling` → `DST/grilling`).
   - If the source `SKILL.md` frontmatter `name` differs from the directory basename, **report the difference** but still link by directory basename. (hosts identify a skill by its frontmatter `name`; the link name only needs to be unique in `DST`.)
 
@@ -27,7 +27,7 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 The user wants to, or clearly should, do any of:
 
-- "install / link / mount skill X (from the my-skills repo) into DSH / Claude Code / Codex / pi"
+- "install / link / mount skill X (from the my-skills repo) into DSH / Claude Code / Codex / pi / omp"
 - "list what skills are available to install"
 - "check if skill X is properly installed / recognized"
 - "uninstall / remove skill X" (only the link, never the source)
