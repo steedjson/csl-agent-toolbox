@@ -2,6 +2,13 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-22][docs] 插件登记说明与统一组件目录矛盾
+- 现象: README 仍声明插件不登记到 skills.json,与当前 plugins 数组冲突
+- 根因: 组件管理扩展后,旧 Codex 插件章节未同步更新
+- 修法: 区分统一组件目录与宿主 marketplace;旧目录方案归档并标记历史状态
+- 关联: README.md、docs/archive/repository-layout-refactor.md
+- 教训: 调整组件契约时,同时核对旧说明与历史方案入口
+
 ## [2026-10-22][toolbox-adapters] 参数等号写法扩大更新范围,运行器预检漏读组件 PATH
 - 现象: `--kind=plugin` 未被转发层识别,误走全类型更新;组件在 env.PATH 指定可执行文件目录时,安装前预检错误拒绝
 - 根因: 用原始参数 token 做成员判断代替 argparse 解析;运行器检查只读取父进程 PATH

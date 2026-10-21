@@ -137,7 +137,7 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 ## Codex 插件
 
-`plugins/` 存放需要构建、测试、安装和显式信任 hook 的 Codex 插件运行时。插件不是独立 Agent Skill，不登记到 `skills.json`。仓库插件目录为 `.agents/plugins/marketplace.json`。
+`plugins/` 存放宿主原生插件包，兼容性由插件 manifest 决定。插件登记在 `skills.json` 的 `plugins` 数组；`.agents/plugins/marketplace.json` 是供 Codex 发现和安装插件的 marketplace 目录。当前插件包含 hook，安装后需显式信任并验证激活。
 
 ### [openwolf-codegraph-bridge](./plugins/openwolf-codegraph-bridge/)
 

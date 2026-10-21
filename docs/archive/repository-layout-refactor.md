@@ -1,5 +1,11 @@
 # my-skills repository layout refactor
 
+> Historical record — archived on 2026-10-22. This plan describes the repository
+> as of 2026-08-07 and is not a current execution plan. Names, paths, and line
+> references below may be obsolete. Current contracts:
+> [AGENTS.md](../../AGENTS.md), [README.md](../../README.md), and
+> [installation guide](../installation.md). Original plan preserved below.
+
 Date: 2026-08-07
 
 ## Decision
