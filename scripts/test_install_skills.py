@@ -4,6 +4,7 @@
 Run: python3 scripts/test_install_skills.py
 """
 import os
+import json
 import shutil
 import sys
 import tempfile
@@ -39,7 +40,7 @@ class InstallTests(unittest.TestCase):
 
     def run_cmd(self, *argv):
         with mock.patch.object(inst, "HOSTS", {"codex": str(self.host)}):
-            with mock.patch.object(sys, "argv", ["install_skills.py", *argv]):
+            with mock.patch.object(sys, "argv", ["install_skills.py", *argv, "--host", "codex"]):
                 return inst.main()
 
     def test_repo_skills_ignores_non_skill_dirs(self):
@@ -117,10 +118,40 @@ class InstallTests(unittest.TestCase):
                 self.assertEqual(inst.main(), 0)
         self.assertTrue((direct / "alpha" / "SKILL.md").exists())
 
-    def test_missing_host_directory_is_skipped(self):
+    def test_missing_selected_host_directory_is_created(self):
         with mock.patch.object(inst, "HOSTS", {"ghost": str(self.tmp / "nope")}):
-            with mock.patch.object(sys, "argv", ["install_skills.py", "link"]):
+            with mock.patch.object(sys, "argv", ["install_skills.py", "link", "--host", "ghost"]):
                 self.assertEqual(inst.main(), 0)
+        self.assertTrue((self.tmp / "nope" / "alpha").is_symlink())
+
+    def test_write_requires_explicit_host(self):
+        with mock.patch.object(sys, "argv", ["install_skills.py", "link"]):
+            self.assertEqual(inst.main(), 2)
+        self.assertFalse((self.host / "alpha").exists())
+
+    def test_unlink_dry_run_preserves_link(self):
+        self.run_cmd("link", "--skill", "alpha")
+        self.assertEqual(self.run_cmd("unlink", "--skill", "alpha", "--dry-run"), 0)
+        self.assertTrue((self.host / "alpha").is_symlink())
+
+    def test_unknown_name_does_not_remove_foreign_link(self):
+        (self.host / "unknown").symlink_to(self.tmp / "foreign")
+        self.assertEqual(self.run_cmd("unlink", "--skill", "unknown"), 2)
+        self.assertTrue((self.host / "unknown").is_symlink())
+
+    def test_dependency_install_and_cycle_preflight(self):
+        registry = self.repo / "skills.json"
+        registry.write_text(json.dumps({"skills": [{"name": "alpha", "depends_on": ["beta"]}]}))
+        self.assertEqual(self.run_cmd("link", "--skill", "alpha"), 0)
+        self.assertTrue((self.host / "beta").is_symlink())
+        (self.host / "alpha").unlink()
+        (self.host / "beta").unlink()
+        registry.write_text(json.dumps({"skills": [
+            {"name": "alpha", "depends_on": ["beta"]},
+            {"name": "beta", "depends_on": ["alpha"]},
+        ]}))
+        self.assertEqual(self.run_cmd("link", "--skill", "alpha"), 2)
+        self.assertFalse((self.host / "alpha").exists())
 
 
 if __name__ == "__main__":

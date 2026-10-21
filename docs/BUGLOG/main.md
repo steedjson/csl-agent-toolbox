@@ -2,6 +2,27 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-22][toolbox-adapters] 参数等号写法扩大更新范围,运行器预检漏读组件 PATH
+- 现象: `--kind=plugin` 未被转发层识别,误走全类型更新;组件在 env.PATH 指定可执行文件目录时,安装前预检错误拒绝
+- 根因: 用原始参数 token 做成员判断代替 argparse 解析;运行器检查只读取父进程 PATH
+- 修法: parse_known_args 解析类型/目录/组件选择后再按范围分发;使用组件展开后的 PATH 检查运行器;OMP 本地插件适配收窄到有效原生 package.json
+- 关联: scripts/toolbox.py、scripts/test_toolbox.py(等号参数、跨类型范围、组件 PATH 回归)
+- 教训: 命令行转发也是输入边界,不能用字符串存在性推断用户选定范围
+
+## [2026-10-22][component-sync] 第三方同步缺少类型与写入边界,失败后内容和 pin 不一致
+- 现象: npm 包根默认路径无法导入;归档成员可越出组件目录;前一个组件已更新而后一个源失败时,版本记录未保存
+- 根因: 根路径直接拼前缀;文件键未验证;所有 pin 延迟到批次末尾写入
+- 修法: 统一 skill/plugin/mcp 的组件路径与 manifest;拒绝越界路径和符号链接;临时目录准备完整组件,按组件提交并原子保存目录,普通写入失败恢复旧内容
+- 关联: scripts/sync_upstream.py、scripts/test_sync_upstream.py(54 例)
+- 教训: 固定版本是合并基线,必须和已落盘内容一起提交;新增组件类型不应复制一套更新器
+
+## [2026-10-22][host-install] 默认全宿主和卸载预览不安全,依赖安装遗漏
+- 现象: 未传宿主会覆盖所有宿主范围;unlink 的 dry-run 仍删链接;未知名字可删外来链接;只装入口 Skill 漏装声明的依赖
+- 根因: 查询与写操作共享默认宿主展开;卸载未传预览参数;归属校验受名称存在条件限制;安装器不读取 depends_on
+- 修法: 写操作强制显式宿主;卸载实现预览并拒绝未知来源;安装前解析依赖并拒绝循环;统一入口先检查宿主适配再执行
+- 关联: scripts/install_skills.py、scripts/toolbox.py、scripts/test_install_skills.py、scripts/test_toolbox.py
+- 教训: 用户选择的组件、范围、宿主和预览语义都必须落实在可执行边界上
+
 ## [2026-10-22][install-location] 擅自把用户级 ~/.agents/skills 挂到仓库,违背"默认装 agent 各自目录"原则
 - 现象: 为解决 omp 可见性风险,把 `~/.agents/skills` 整体 symlink 到仓库并写成"omp 直连"架构;用户纠正:默认安装必须落各 agent 自己的技能目录,用户级目录只有明确指定时才用
 - 根因: 解决"宿主清空断供"时,选了对工具最省事的位置(omp 原生扫 `~/.agents/skills`),而不是对架构正确的位置(装进 `~/.omp/agent/skills`);用户级目录是跨 agent 共享资源,擅自挂载等于替用户做了全局决策,且让 Vercel skills CLI 的写入直通仓库

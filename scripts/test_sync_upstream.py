@@ -3,14 +3,17 @@
 
 Run: python3 scripts/test_sync_upstream.py
 """
+import io
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import tarfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import sync_upstream as sync  # noqa: E402
@@ -277,6 +280,280 @@ class ImportFlowTests(unittest.TestCase):
     def test_imported_skill_is_then_checkable(self):
         sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(sync.cmd_check(self.repo, set(), self.git_base), 0)
+
+    def test_explicit_branch_remains_update_target(self):
+        self.assertEqual(sync.cmd_import(self.repo, "demo", "upstream/tree/main/skills/demo",
+                                       None, [], "test", self.git_base), 0)
+        entry = json.loads((self.repo / "skills.json").read_text())["skills"][0]
+        self.assertEqual(entry["upstream"]["branch"], "main")
+        self.assertEqual(sync.latest_revision(entry["upstream"], self.git_base), "main")
+
+    def test_git_symlink_is_rejected(self):
+        (self.upstream / "skills/demo/link").symlink_to("../../../../outside")
+        git("add", "-A", cwd=self.upstream)
+        git("commit", "-qm", "link", cwd=self.upstream)
+        git("push", "-q", str(self.tmp / "upstream.git"), "main:main", cwd=self.upstream)
+        with self.assertRaisesRegex(RuntimeError, "link"):
+            sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", self.git_base)
+        self.assertFalse((self.repo / "demo").exists())
+
+
+class ComponentFlowTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="component-sync-test-")
+        self.addCleanup(self.temporary.cleanup)
+        self.repo = Path(self.temporary.name)
+        (self.repo / "skills.json").write_text('{"skills": []}\n')
+
+    def metadata(self):
+        return json.loads((self.repo / "skills.json").read_text())
+
+    def fixture(self, kind, manifest=None):
+        manifest = manifest or {"skill": "SKILL.md", "plugin": ".codex-plugin/plugin.json",
+                                "mcp": "mcp.json"}[kind]
+        body = (b"---\nname: demo\ndescription: demo\n---\nbody\n" if kind == "skill"
+                else b'{"name":"demo","description":"demo"}\n')
+        return {manifest: body, "LICENSE": b"MIT License\n", "notes.md": b"v1\n"}
+
+    def import_package(self, kind="skill", name="demo", files=None):
+        with patch.object(sync, "fetch", return_value=(files or self.fixture(kind), "v1")):
+            self.assertEqual(sync.cmd_import(self.repo, name, "npm:test", None, [], "test", "unused",
+                                             kind=kind), 0)
+
+    def test_all_component_kinds_import_check_update(self):
+        for kind, (collection, directory) in sync.COMPONENTS.items():
+            with self.subTest(kind=kind):
+                self.import_package(kind)
+                target = self.repo / directory / "demo"
+                self.assertEqual(sync.component_dir(self.repo, "demo", kind), target.resolve())
+                entry = self.metadata()[collection][0]
+                self.assertEqual(entry["upstream"]["license"], "MIT")
+                self.assertEqual(entry["description"], "demo")
+                before, after = self.fixture(kind), self.fixture(kind)
+                after["notes.md"] = b"v2\n"
+
+                def fetch(upstream, revision, git_base):
+                    return (before, "v1") if revision == "v1" else (after, "v2")
+
+                with patch.object(sync, "fetch", side_effect=fetch):
+                    self.assertEqual(sync.cmd_check(self.repo, {"demo"}, "unused", kind), 1)
+                    self.assertEqual(sync.cmd_update(self.repo, {"demo"}, True, "unused", kind), 0)
+                self.assertEqual((target / "notes.md").read_bytes(), b"v2\n")
+                self.assertEqual(self.metadata()[collection][0]["upstream"]["version"], "v2")
+
+    def test_plugin_manifest_locations(self):
+        for index, manifest in enumerate(("plugin.json", ".codex-plugin/plugin.json",
+                                          ".claude-plugin/plugin.json")):
+            self.import_package("plugin", f"plugin-{index}", self.fixture("plugin", manifest))
+        self.assertEqual(len(self.metadata()["plugins"]), 3)
+
+    def test_omp_pi_plugin_packages(self):
+        for host in ("omp", "pi"):
+            files = {"package.json": json.dumps({"name": "demo", host: {"extensions": ["index.js"]},
+                                                   "description": "native plugin"}).encode(),
+                     "index.js": b"export default function () {}\n"}
+            self.import_package("plugin", host, files)
+        self.assertEqual([entry["description"] for entry in self.metadata()["plugins"]],
+                         ["native plugin", "native plugin"])
+
+    def test_ordinary_npm_package_is_not_a_plugin(self):
+        for metadata in ({"name": "ordinary"}, {"name": "ordinary", "pi": True},
+                         {"name": "ordinary", "omp": "not an object"}):
+            with patch.object(sync, "fetch", return_value=({"package.json": json.dumps(metadata).encode()}, "v1")):
+                self.assertEqual(sync.cmd_import(self.repo, "demo", "npm:test", None, [], "test",
+                                                 "unused", kind="plugin"), 2)
+        self.assertNotIn("plugins", self.metadata())
+
+    def test_non_skill_requires_own_manifest(self):
+        for kind in ("plugin", "mcp"):
+            with patch.object(sync, "fetch", return_value=(self.fixture("skill"), "v1")):
+                self.assertEqual(sync.cmd_import(self.repo, "demo", "npm:test", None, [], "test",
+                                                 "unused", kind=kind), 2)
+            self.assertNotIn(sync.COMPONENTS[kind][0], self.metadata())
+
+    def test_import_failure_rolls_back_tree_and_registry(self):
+        before = (self.repo / "skills.json").read_bytes()
+        with patch.object(sync, "save_registry", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                self.import_package()
+        self.assertFalse((self.repo / "demo").exists())
+        self.assertEqual((self.repo / "skills.json").read_bytes(), before)
+        self.assertFalse(list(self.repo.glob(".sync-*")))
+
+    def test_update_registry_failure_rolls_back_content(self):
+        self.import_package()
+        before = (self.repo / "skills.json").read_bytes()
+        old = sync.local_files(self.repo / "demo")
+        after = dict(old, **{"notes.md": b"v2\n"})
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]), \
+                patch.object(sync, "save_registry", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                sync.cmd_update(self.repo, set(), True, "unused")
+        self.assertEqual(sync.local_files(self.repo / "demo"), old)
+        self.assertEqual((self.repo / "skills.json").read_bytes(), before)
+
+    def test_staging_write_failure_preserves_tree(self):
+        self.import_package()
+        before = (self.repo / "skills.json").read_bytes()
+        old = sync.local_files(self.repo / "demo")
+        after = dict(old, **{"notes.md": b"v2\n"})
+        original = Path.write_bytes
+
+        def write(path, payload):
+            if path.name == "notes.md" and payload == b"v2\n":
+                raise OSError("disk full")
+            return original(path, payload)
+
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]), \
+                patch.object(Path, "write_bytes", write):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                sync.cmd_update(self.repo, set(), True, "unused")
+        self.assertEqual(sync.local_files(self.repo / "demo"), old)
+        self.assertEqual((self.repo / "skills.json").read_bytes(), before)
+
+    def test_completed_component_pin_survives_later_fetch_failure(self):
+        self.import_package(name="alpha")
+        self.import_package(name="beta")
+        old = self.fixture("skill")
+        after = dict(old, **{"notes.md": b"v2\n"})
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2"),
+                                                      RuntimeError("later source down")]):
+            with self.assertRaisesRegex(RuntimeError, "later source down"):
+                sync.cmd_update(self.repo, set(), True, "unused")
+        entries = self.metadata()["skills"]
+        self.assertEqual([e["upstream"]["version"] for e in entries], ["v2", "v1"])
+        self.assertEqual((self.repo / "alpha/notes.md").read_bytes(), b"v2\n")
+        self.assertEqual((self.repo / "beta/notes.md").read_bytes(), b"v1\n")
+
+    def test_pin_only_update_persisted_before_later_failure(self):
+        self.import_package(name="alpha")
+        self.import_package(name="beta")
+        old = self.fixture("skill")
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (old, "v2"),
+                                                      RuntimeError("later source down")]):
+            with self.assertRaisesRegex(RuntimeError, "later source down"):
+                sync.cmd_update(self.repo, set(), True, "unused")
+        self.assertEqual(self.metadata()["skills"][0]["upstream"]["version"], "v2")
+
+    def test_dry_run_reports_pending_pin_advance(self):
+        self.import_package()
+        old = self.fixture("skill")
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (old, "v2")]):
+            self.assertEqual(sync.cmd_update(self.repo, set(), False, "unused"), 1)
+        self.assertEqual(self.metadata()["skills"][0]["upstream"]["version"], "v1")
+
+    def test_check_reports_outdated_pin_when_local_already_matches_latest(self):
+        self.import_package()
+        old = self.fixture("skill")
+        after = dict(old, **{"notes.md": b"v2\n"})
+        (self.repo / "demo/notes.md").write_bytes(b"v2\n")
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]):
+            self.assertEqual(sync.cmd_check(self.repo, set(), "unused"), 1)
+
+    def test_update_refuses_to_remove_required_manifest(self):
+        self.import_package("mcp")
+        old = self.fixture("mcp")
+        after = {key: value for key, value in old.items() if key != "mcp.json"}
+        before = (self.repo / "skills.json").read_bytes()
+        with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]):
+            with self.assertRaisesRegex(RuntimeError, "manifest"):
+                sync.cmd_update(self.repo, set(), True, "unused", "mcp")
+        self.assertTrue((self.repo / "mcp/demo/mcp.json").is_file())
+        self.assertEqual((self.repo / "skills.json").read_bytes(), before)
+
+    def test_unknown_filter_returns_error(self):
+        for command in ("check", "update"):
+            with self.subTest(command=command):
+                self.assertEqual(sync.main([command, "--repo", str(self.repo),
+                                            "--component", "missing"]), 2)
+
+    def test_cli_kind_and_legacy_filter(self):
+        self.import_package("mcp")
+        old = self.fixture("mcp")
+        with patch.object(sync, "fetch", return_value=(old, "v1")):
+            self.assertEqual(sync.main(["check", "--kind", "mcp", "--skill", "demo", "--repo",
+                                        str(self.repo)]), 0)
+
+    def test_import_rejects_malicious_relative_paths(self):
+        for relative in ("../outside", "/tmp/outside", "a/../../outside", "C:/outside"):
+            files = dict(self.fixture("skill"), **{relative: b"bad"})
+            with self.subTest(relative=relative), \
+                    patch.object(sync, "fetch", return_value=(files, "v1")):
+                with self.assertRaisesRegex(RuntimeError, "unsafe"):
+                    sync.cmd_import(self.repo, "demo", "npm:test", None, [], "test", "unused")
+            self.assertFalse((self.repo / "demo").exists())
+
+    def test_local_symlink_rejected_before_update(self):
+        self.import_package()
+        outside = self.repo / "outside"
+        outside.write_bytes(b"untouched")
+        (self.repo / "demo/link").symlink_to(outside)
+        with patch.object(sync, "fetch", return_value=(self.fixture("skill"), "v1")):
+            with self.assertRaisesRegex(RuntimeError, "symlink"):
+                sync.cmd_update(self.repo, set(), True, "unused")
+        self.assertEqual(outside.read_bytes(), b"untouched")
+
+    def test_component_parent_symlink_escape_rejected(self):
+        with tempfile.TemporaryDirectory() as outside:
+            (self.repo / "plugins").symlink_to(outside)
+            with self.assertRaisesRegex(RuntimeError, "leaves repository"):
+                sync.component_dir(self.repo, "demo", "plugin")
+
+    def test_atomic_registry_write_failure_keeps_original(self):
+        before = (self.repo / "skills.json").read_bytes()
+        with patch.object(sync.os, "replace", side_effect=OSError("disk full")):
+            with self.assertRaisesRegex(OSError, "disk full"):
+                sync.save_registry(self.repo, {"skills": ["changed"]})
+        self.assertEqual((self.repo / "skills.json").read_bytes(), before)
+        self.assertFalse(list(self.repo.glob(".skills-*")))
+
+
+class NpmArchiveTests(unittest.TestCase):
+    def archive(self, entries):
+        output = io.BytesIO()
+        with tarfile.open(fileobj=output, mode="w:gz") as archive:
+            for name, payload, kind in entries:
+                info = tarfile.TarInfo(name)
+                info.type = kind
+                info.size = len(payload)
+                info.linkname = "../../outside" if kind != tarfile.REGTYPE else ""
+                archive.addfile(info, io.BytesIO(payload))
+        return output.getvalue()
+
+    def fetch_archive(self, entries, path="."):
+        payload = self.archive(entries)
+        with patch.object(sync, "http_json", return_value={"version": "1.0.0", "dist": {
+                "tarball": "https://example.invalid/archive.tgz"}}), \
+                patch.object(sync, "http_bytes", return_value=payload):
+            return sync.npm_files("demo", "latest", path)
+
+    def test_package_root_dot_matches_package_prefix(self):
+        files, revision = self.fetch_archive([("package/SKILL.md", b"skill", tarfile.REGTYPE),
+                                              ("package/nested/a.txt", b"a", tarfile.REGTYPE)])
+        self.assertEqual(files, {"SKILL.md": b"skill", "nested/a.txt": b"a"})
+        self.assertEqual(revision, "1.0.0")
+
+    def test_subdirectory_still_works(self):
+        files, _ = self.fetch_archive([("package/skills/demo/SKILL.md", b"skill", tarfile.REGTYPE)],
+                                      "skills/demo")
+        self.assertEqual(files, {"SKILL.md": b"skill"})
+
+    def test_archive_path_traversal_rejected(self):
+        for path in ("package/../../outside", "/tmp/outside", "package/skills/../outside"):
+            with self.subTest(path=path), self.assertRaisesRegex(RuntimeError, "unsafe"):
+                self.fetch_archive([(path, b"bad", tarfile.REGTYPE)])
+
+    def test_archive_links_rejected(self):
+        for kind in (tarfile.SYMTYPE, tarfile.LNKTYPE):
+            with self.subTest(kind=kind), self.assertRaisesRegex(RuntimeError, "link"):
+                self.fetch_archive([("package/link", b"", kind)])
+
+    def test_source_path_traversal_rejected_before_fetch(self):
+        with patch.object(sync, "http_json") as http:
+            for path in ("../other", "/etc", "nested/../other"):
+                with self.assertRaisesRegex(RuntimeError, "unsafe"):
+                    sync.npm_files("demo", "latest", path)
+            http.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`my-skills` is source repository for portable Agent Skills. Each top-level directory containing `SKILL.md` is one distributable skill.
+`csl-agent-toolbox` is a personal source collection for Agent Skills, MCP packages, and native agent plugins. Keep original and third-party components together, distinguished by provenance metadata. Each top-level directory containing `SKILL.md` is one distributable skill.
 
 ## Source Of Truth
 
@@ -17,16 +17,19 @@ This repository is the single source for every skill and plugin. Host skill dire
 
 ## Structure
 
-- `skills.json`: repository metadata and public skill registry.
+- `skills.json`: sole component catalog (`skills`, `plugins`, `mcps`); filename remains for compatibility.
 - `<skill-name>/SKILL.md`: required skill definition.
 - `<skill-name>/references/`, `scripts/`, `assets/`: optional skill resources.
-- `plugins/<plugin-name>/`: installable Codex plugin packages.
+- `plugins/<plugin-name>/`: host-native plugin packages; manifest determines compatibility.
+- `mcp/<name>/mcp.json`: one portable MCP server configuration package.
 - `.agents/plugins/marketplace.json`: repository plugin marketplace catalog; local plugin paths resolve relative to repository root.
 - `skills.json` `category`: discovery and classification metadata only, never a path resolver.
 - `README.md`: public skill list and usage overview.
 - `codexradar-model-advisor/`: current OpenAI Codex model-advice skill.
 
-Repository has no workflow runtime or test harness. Scripts: `scripts/validate_repo.py`, `scripts/sync_upstream.py`, `scripts/install_skills.py`, and the offline suite `scripts/test_sync_upstream.py`; do not document or invoke commands that do not exist.
+Entry point: `python3 scripts/toolbox.py` (`list`, `hosts`, `status`, `install`, `uninstall`, `import`, `check`, `update`). Reuse `scripts/install_skills.py` for Skill links and `scripts/sync_upstream.py` for three-way upstream merges. Offline tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`. Do not document commands that do not exist.
+
+`install` / `uninstall` require named hosts and components; never infer a target or install after import/update. `--host agents` explicitly selects shared user-level Skills. MCP and plugins have host-specific user configuration, not a universal shared install directory. Unknown adapters fail before writes. Preserve unrelated host config, keep credentials out of the repository/output, and use native CLIs when supported. See `docs/installation.md` for verified adapters and limits.
 
 ## Code Navigation
 
@@ -53,9 +56,9 @@ Follow portable Agent Skills layout.
 - Update root `README.md` when public skill list or install commands change.
 - Preserve source skill behavior during migrations. Do not restore files removed by later source revisions.
 
-## Third-Party Skills
+## Third-Party Components
 
-Vendored skills declare an `upstream` block in `skills.json` (`type`, source coordinates, pinned `ref`/`version`, `license`, `synced_at`, optional `exclude`). `scripts/sync_upstream.py` performs the three-way merge; the pin doubles as the merge base.
+Vendored components declare an `upstream` block in `skills.json` (`type`, source coordinates, pinned `ref`/`version`, `license`, `synced_at`, optional `exclude`). `scripts/sync_upstream.py` performs the three-way merge; the pin doubles as the merge base. Use `--kind skill|plugin|mcp`; default remains `skill` for the legacy script. `toolbox.py check/update` defaults to all registered upstream kinds. Self-developed entries have no upstream and are skipped.
 
 - Vendor with `python3 scripts/sync_upstream.py import --source <owner/repo|GitHub URL|npm:pkg> [--path ...] [--exclude ...]`. It writes files and records the pin in one step; never copy files in by hand, because an unrecorded pin makes local edits indistinguishable from upstream changes.
 - Never hand-edit a pinned `ref`/`version`. Advance it with `python3 scripts/sync_upstream.py update --apply`, which also refreshes the `files` list and `synced_at`.

@@ -1,8 +1,8 @@
 {
-  "name": "vlong-skills",
+  "name": "csl-agent-toolbox",
   "version": "1.0.0",
-  "description": "Personal Agent Skills and Codex plugins source collection",
-  "repo": "https://github.com/steedjson/my-skills",
+  "description": "Personal source collection of Agent Skills, MCP servers, and host-native plugins",
+  "repo": "https://github.com/steedjson/csl-agent-toolbox",
   "skills": [
     {
       "name": "codexradar-model-advisor",
@@ -268,7 +268,7 @@
     {
       "name": "ln-install-skill",
       "category": "skill-management",
-      "description": "Install, list, verify, or uninstall agent skills via symlinks between the my-skills repository and any host skills directory — DSH, Claude Code, Codex, pi, omp, zcode, cross-tool, or project-local. The target host must be named by the user; never probe or pick one on your own. Only touches symlinks.",
+      "description": "Install, list, verify, or uninstall agent skills via symlinks between the csl-agent-toolbox repository and any host skills directory. The target host must be named by the user; never probe or pick one on your own. Only touches symlinks.",
       "files": [
         "SKILL.md"
       ]
@@ -533,5 +533,18 @@
         "synced_at": "2026-10-21"
       }
     }
-  ]
+  ],
+  "plugins": [
+    {
+      "name": "openwolf-codegraph-bridge",
+      "description": "Bridge Codex lifecycle events to repository-local OpenWolf and CodeGraph",
+      "files": [
+        ".codex-plugin/plugin.json",
+        "README.md",
+        "hooks/hooks.json",
+        "hooks/openwolf.mjs"
+      ]
+    }
+  ],
+  "mcps": []
 }

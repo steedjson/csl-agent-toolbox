@@ -11,8 +11,8 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 ## Defaults (override per request)
 
-- **Source directory** `SRC` = the `my-skills` repository root — the canonical source of truth for every skill and plugin.
-  - Resolve it in order: path the user names → the current repo if its root contains `skills.json` → `~/BDSYNC/self/AI/tools/my-skills`.
+- **Source directory** `SRC` = the `csl-agent-toolbox` repository root — the canonical source of truth for every skill and plugin.
+  - Resolve it in order: path the user names → the current repo if its root contains `skills.json` → `~/BDSYNC/self/AI/tools/csl-agent-toolbox`.
   - `~/.cc-switch/skills` is **not** a source any more. It is only a legacy copy location; if the user points there, say so and offer the repository instead.
   - Never treat a host directory (`~/.claude/skills`, `~/.codex/skills`) as a source.
 - **Target directory** `DST` = the destination host's skills directory. The user must name the agent ("装到 codex" / "install to claude"). Never pick a host on your own; if the request has no target, ask which agent before doing anything.
@@ -26,7 +26,7 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 The user wants to, or clearly should, do any of:
 
-- "install / link / mount skill X (from the my-skills repo) into DSH / Claude Code / Codex / pi / omp"
+- "install / link / mount skill X (from the csl-agent-toolbox repo) into DSH / Claude Code / Codex / pi / omp"
 - "list what skills are available to install"
 - "check if skill X is properly installed / recognized"
 - "uninstall / remove skill X" (only the link, never the source)
@@ -34,6 +34,13 @@ The user wants to, or clearly should, do any of:
 Trigger phrases: "ln install skill", "软链装 skill", "把 skill 链接到 dsh / claude code", "把这个 skill 装到项目里", "装到所有宿主", "列一下可装的 skill", "卸载 skill 的链接".
 
 ## Actions
+
+When `SRC` is this repository and the destination is a named user-level host, use
+`python3 "$SRC/scripts/toolbox.py" install --skill <name> --host <host>` (or `uninstall`).
+Repeat `--skill` and `--host` for an explicit multi-selection; use `--dry-run` for preview.
+This preserves dependency installation and host-directory overrides. `--host agents`
+is only for an explicitly requested shared user-level destination. The steps below
+also cover arbitrary external sources and project-local destinations.
 
 In every action: **report the state before you change it**, then **echo the result with `ls -l` after**. Resolve `~` with the user's actual home directory (`$HOME`) — never pass a literal `~` to a tool that won't expand it.
 
@@ -91,7 +98,7 @@ Only ever `rm` the **link** at `DST/<skill>`. **Never** delete the source direct
 
 ### 5. Install to all hosts (`install-all <skill>`)
 
-User says "装到所有宿主" / "everywhere". For each **existing** directory in the probe list (`~/.dsh/skills`, `~/.claude/skills`, `~/.agents/skills`, plus any the user names), run **Install** steps 1–5 with that `DST`. Hosts with no existing directory are skipped (and reported). A failed verify on one host does not stop the other hosts.
+User says "装到所有宿主" / "everywhere". Use the explicitly requested agents, or existing agent-specific directories in the repository host table. Exclude shared `~/.agents/skills` unless the user also explicitly requests the shared user-level destination. Run Install for those targets; a failed verify on one host does not stop the others. Do not treat a shared directory as proof that every agent discovers it.
 
 ## Rules
 

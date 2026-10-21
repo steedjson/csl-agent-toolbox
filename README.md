@@ -1,15 +1,31 @@
-# vlong's Agent Skills & Codex Plugins
+# csl-agent-toolbox
 
-个人 Agent Skills 与 Codex 插件源码集合。
+个人常用 Agent Skills、MCP 和插件源码库。自研内容直接维护；第三方内容记录来源和固定版本，通过三方合并追踪上游更新。按需选择组件和目标宿主安装。
 
 仓库布局：
 
-- `skills.json`：Skill 注册表，`category` 仅用于分类展示，不决定路径。
+- `skills.json`：统一组件目录，含 `skills`、`plugins`、`mcps`；保留文件名以兼容已有工具。`category` 仅用于分类展示，不决定路径。
 - `<skill-name>/`：根目录下每个含 `SKILL.md` 的目录是一个独立可分发 Skill。
-- `plugins/<plugin-name>/`：可安装的 Codex 插件包。
+- `plugins/<plugin-name>/`：宿主原生插件包，按 manifest 判断支持的宿主。
+- `mcp/<name>/mcp.json`：独立 MCP 配置包；当前尚未收录独立 MCP。
 - `.agents/plugins/marketplace.json`：仓库插件 marketplace 目录。
 
+```bash
+python3 scripts/toolbox.py list
+python3 scripts/toolbox.py hosts
+python3 scripts/toolbox.py install --skill grill-me --skill coding-discipline --host codex --dry-run
+python3 scripts/toolbox.py install --skill grill-me --skill coding-discipline --host codex
+python3 scripts/toolbox.py install --skill grilling --host agents  # 明确安装到用户级共享目录
+python3 scripts/toolbox.py check                               # 所有已登记第三方组件
+python3 scripts/toolbox.py update                              # 预览
+python3 scripts/toolbox.py update --apply                       # 应用到仓库
+```
+
+`--host` 可重复，`--skill` / `--mcp` / `--plugin` 可重复组合。仓库更新不会新增宿主安装；MCP 和插件通过原生 CLI 或原生配置安装。详细适配矩阵、MCP 格式和更新后的生效方式见 [安装与适配](docs/installation.md)。
+
 ## Skills 列表
+
+其他已登记入口：[frontend-ui-ux-design](./frontend-ui-ux-design/)、[agent-reach](./agent-reach/)、[grill-with-docs](./grill-with-docs/)、[domain-modeling](./domain-modeling/)、[reverse-engineer-anything](./reverse-engineer-anything/)。完整来源和固定版本以 `python3 scripts/toolbox.py list` 为准。
 
 ### 模型与路由（models-and-routing）
 
@@ -107,7 +123,7 @@
 
 #### [ln-install-skill](./ln-install-skill/)
 
-用符号链接把本仓库（`my-skills`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`）、omp（`~/.omp/agent/skills`）、zcode（`~/.zcode/skills`）、cow（`~/cow/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标宿主必须由用户点名，未点名先询问，不自行探测。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
+用符号链接把本仓库（`csl-agent-toolbox`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`）、omp（`~/.omp/agent/skills`）、zcode（`~/.zcode/skills`）、cow（`~/cow/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标宿主必须由用户点名，未点名先询问，不自行探测。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
 
 #### [dao-skill](./dao-skill/)
 
@@ -187,14 +203,14 @@ python3 scripts/install_skills.py status
 # 装某一个 skill 到点名的 agent（推荐形式：skill + host 都写明）
 python3 scripts/install_skills.py link --skill grilling --host codex
 
-# 全量操作：把所有 skill 链接到所有已存在的宿主（只建/改 symlink，不复制、不改仓库文件）
-python3 scripts/install_skills.py link
+# 将所有 Skill 安装到明确指定的宿主
+python3 scripts/install_skills.py link --host codex
 
 # 把仍指向仓库外的旧链接改指到仓库
-python3 scripts/install_skills.py link --prune
+python3 scripts/install_skills.py link --host codex --prune
 
 # 卸载（只删链接）
-python3 scripts/install_skills.py unlink --skill grilling
+python3 scripts/install_skills.py unlink --skill grilling --host codex
 
 # 列出仓库里的 skill 及其上游来源
 python3 scripts/install_skills.py list
@@ -202,13 +218,13 @@ python3 scripts/install_skills.py list
 
 `status` 会把每个条目分成 `linked`（已指向仓库）、`elsewhere`（指向旧目录，需 `--prune`）、`missing`（未安装）、`real-directory`（是真实目录而非链接，脚本不会动它，需人工确认后删除）。
 
-symlink 的好处是改仓库即刻在所有宿主生效，不存在"装了旧版"的问题。宿主按目录名 + `SKILL.md` 发现技能，链接名用仓库目录名。
+Skill 安装自动补齐 `depends_on`；目标目录不存在时创建，真实目录不覆盖。symlink 保持安装与源码同步；宿主可能缓存 Skill，当前对话未刷新时新开对话验证。目录存在或命令退出成功不等于运行能力已验证。
 
 ---
 
-## 第三方 Skill 更新
+## 第三方组件更新
 
-搬进来的第三方 Skill 在 `skills.json` 里带 `upstream` 块，记录来源、上游路径、当前固定版本和许可证。`scripts/sync_upstream.py` 用这个块做一键导入、检查与更新。
+第三方组件在 `skills.json` 对应的 `skills`、`plugins`、`mcps` 列表中声明 `upstream`，记录来源、上游路径、固定版本和许可证。自研组件不带 `upstream`，更新器会跳过。不可固定版本的改编材料用 `source_note` 记录来源，不伪装成可同步上游。
 
 ### 搬进来（一次性）
 
@@ -228,6 +244,11 @@ python3 scripts/sync_upstream.py import \
 
 # npm 包里的目录
 python3 scripts/sync_upstream.py import --source npm:natureco-cli --path skills/taste-skill
+
+# 第三方插件、MCP 配置包也复用相同的来源与更新逻辑
+# 将 owner/repository 和路径替换为真实来源
+python3 scripts/toolbox.py import --kind plugin --source owner/repository --path plugins/example --name example
+python3 scripts/toolbox.py import --kind mcp --source owner/repository --path mcp/example --name example
 ```
 
 `--source` 接受 `owner/repo`、GitHub URL、`/tree/<ref>/<path>`、`/blob/<ref>/.../SKILL.md`、`npm:<package>`。`--path` 显式覆盖解析出的子目录；`--name` 覆盖目录名（默认取子目录或仓库 basename）；`--exclude` 可重复，用 glob 剔除 CI 配置、`.gitignore`、大图等不该入库的东西；`--license` 用于上游没有 LICENSE 文件的情况，否则记为 `UNVERIFIED`。
@@ -248,9 +269,16 @@ python3 scripts/sync_upstream.py update
 
 # 应用更新：写文件、推进 skills.json 里的 ref/version、刷新 files 列表
 python3 scripts/sync_upstream.py update --apply
+
+# 统一入口：所有组件；指定 --kind 与 --component 可缩小范围
+python3 scripts/toolbox.py check
+python3 scripts/toolbox.py update --kind skill --component grok-build-cli --apply
+python3 scripts/toolbox.py update --apply
 ```
 
-更新只写仓库文件，不改任何宿主目录；已用 symlink 安装的 skill 在宿主侧即刻生效，其余宿主不受影响。
+旧 `sync_upstream.py` 命令默认只处理 Skill；统一入口 `toolbox.py check/update` 默认遍历有上游记录的三类组件。`--kind skill|plugin|mcp` 选择一类，`--component` 可重复；旧 `--skill` 过滤参数仍兼容。
+
+更新只写仓库。Skill 和本地链接包读取仓库源码；原生插件管理器缓存的包、已经启动的 MCP 进程需要按宿主方式更新或重启，不能把源码更新等同于运行时已更新。每个成功组件立即保存版本记录，后续来源失败不丢前面的完成状态。
 
 `check` 输出三种状态：`current`（与上游一致，括号里会标出本地改动数）、`pin behind`（内容没变但上游有更新的 commit）、`drift`（上游内容变了，逐文件列出 update/merge/delete/add/conflict）。
 
@@ -272,7 +300,7 @@ python3 scripts/sync_upstream.py update --apply
 ## 目录结构
 
 ```
-my-skills/
+csl-agent-toolbox/
 ├── .agents/
 │   └── plugins/
 │       └── marketplace.json
@@ -300,6 +328,8 @@ my-skills/
 │       ├── .codex-plugin/plugin.json
 │       └── hooks/
 ├── skills.json
+├── scripts/toolbox.py
+├── mcp/<name>/mcp.json   # 收录独立 MCP 后创建
 ├── AGENTS.md
 └── README.md
 ```
@@ -315,4 +345,4 @@ MIT
 ## 联系
 
 - GitHub: [@steedjson](https://github.com/steedjson)
-- Repository: [steedjson/my-skills](https://github.com/steedjson/my-skills)
+- Repository: [steedjson/csl-agent-toolbox](https://github.com/steedjson/csl-agent-toolbox)

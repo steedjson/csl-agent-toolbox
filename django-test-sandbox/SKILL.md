@@ -1,6 +1,7 @@
 ---
 name: django-test-sandbox
-description: 把实测验证过的 Django 内存测试沙盒(SQLite :memory: + 禁迁移 + PG 字段建表垫片 + 探针门禁)安装到目标 Django 项目并完成验证。Use when 用户说"给这个 Django 项目上测试沙盒 / 装 django-test-sandbox / 装内存测试沙盒 / Django 沙盒安装"。
+description: >-
+  把实测验证过的 Django 内存测试沙盒(SQLite :memory: + 禁迁移 + PG 字段建表垫片 + 探针门禁)安装到目标 Django 项目并完成验证。Use when 用户说"给这个 Django 项目上测试沙盒 / 装 django-test-sandbox / 装内存测试沙盒 / Django 沙盒安装"。
 ---
 
 # Django 测试沙盒安装(实测版)

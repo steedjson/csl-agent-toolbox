@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check and update vendored third-party skills from their upstream sources.
+"""Check and update vendored skills, plugins, and MCP packages from upstream.
 
 Every skill in skills.json may declare an "upstream" block:
 
@@ -41,6 +41,7 @@ Exit codes: 0 clean/applied, 1 drift or conflict, 2 error.
 import argparse
 import atexit
 import base64
+import copy
 import hashlib
 import io
 import json
@@ -60,6 +61,97 @@ from pathlib import Path
 NPM_REGISTRY = "https://registry.npmjs.org"
 DEFAULT_GIT_BASE = "https://github.com"
 SKIP_NAMES = {".DS_Store", "__pycache__"}
+COMPONENTS = {"skill": ("skills", ""), "plugin": ("plugins", "plugins"), "mcp": ("mcps", "mcp")}
+
+
+def safe_relative(value, allow_root=False):
+    """Reject archive and registry paths that can leave their component."""
+    if allow_root and value in ("", "."):
+        return "."
+    if (not value or value.startswith("/") or "\\" in value or
+            any(part in ("", ".", "..") for part in value.split("/")) or
+            re.match(r"^[A-Za-z]:", value)):
+        raise RuntimeError(f"unsafe component path: {value!r}")
+    return value
+
+
+def component_dir(repo, name, kind="skill"):
+    if kind not in COMPONENTS:
+        raise RuntimeError(f"unsupported component kind: {kind!r}")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
+        raise RuntimeError(f"invalid component name: {name!r}")
+    root = Path(repo).resolve()
+    target = root / COMPONENTS[kind][1] / name
+    if target.is_symlink() or not target.resolve().is_relative_to(root):
+        raise RuntimeError(f"component path leaves repository: {target}")
+    return target
+
+
+def component_manifest(files, kind):
+    manifests = {"skill": ("SKILL.md",), "plugin": ("plugin.json", ".codex-plugin/plugin.json",
+                 ".claude-plugin/plugin.json", "package.json"), "mcp": ("mcp.json",)}[kind]
+    for manifest in manifests:
+        if manifest not in files:
+            continue
+        if kind == "skill":
+            return manifest
+        metadata = json.loads(files[manifest])
+        if not isinstance(metadata, dict):
+            raise RuntimeError(f"{manifest} must contain a JSON object")
+        if manifest == "package.json" and not any(isinstance(metadata.get(key), dict)
+                                                 for key in ("omp", "pi")):
+            continue
+        return manifest
+    return None
+
+
+def save_registry(repo, data):
+    """Replace registry only after its complete new contents are on disk."""
+    target = repo / "skills.json"
+    if target.is_symlink():
+        raise RuntimeError("skills.json must not be a symlink")
+    fd, temporary = tempfile.mkstemp(prefix=".skills-", dir=repo)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(data, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temporary, target)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def commit_component(repo, target, files, data):
+    """Stage one complete component; restore its old tree if registry commit fails."""
+    for relative in files:
+        safe_relative(relative)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".sync-", dir=target.parent) as temporary:
+        work = Path(temporary)
+        staged, backup = work / "new", work / "old"
+        staged.mkdir()
+        # Preserve ignored local files and modes, while replacing only planned content.
+        if target.exists():
+            local_files(target)
+            shutil.copytree(target, staged, dirs_exist_ok=True)
+            for relative in local_files(target):
+                if relative not in files:
+                    (staged / relative).unlink()
+        for relative, payload in files.items():
+            path = staged / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(payload)
+        existed = target.exists()
+        if existed:
+            target.rename(backup)
+        try:
+            staged.rename(target)
+            save_registry(repo, data)
+        except BaseException:
+            if target.exists():
+                shutil.rmtree(target)
+            if existed:
+                backup.rename(target)
+            raise
 
 
 def run(cmd, cwd=None):
@@ -130,6 +222,7 @@ def _cleanup_works():
 def reset_caches():
     """Drop per-run fetch state so a later command sees a mutated upstream."""
     _cleanup_works()
+    _HTTP_CACHE.clear()
 
 
 atexit.register(_cleanup_works)
@@ -165,23 +258,35 @@ def github_files(repo, path, ref, git_base, exclude=()):
     Blobs are prefetched in one request; a partial clone would otherwise fetch
     each file separately, which is minutes for a few dozen files.
     """
+    path = safe_relative(path, allow_root=True)
     work, sha = prepare_work(repo, ref, git_base)
     scope = [] if path.strip() in ("", ".") else ["--", path]
-    listing = run(["git", "-C", work, "ls-tree", "-r", "--name-only", sha, *scope]).decode().splitlines()
+    records = run(["git", "-C", work, "ls-tree", "-rz", sha, *scope]).split(b"\0")
+    listing = []
+    oids = []
+    for record in records:
+        if not record:
+            continue
+        metadata, raw_name = record.split(b"\t", 1)
+        mode, object_type, oid = metadata.decode().split()
+        item = raw_name.decode()
+        safe_relative(item)
+        if _excluded(item, path, exclude):
+            continue
+        if mode == "120000" or object_type != "blob":
+            raise RuntimeError(f"unsupported upstream link or submodule: {item}")
+        listing.append(item)
+        oids.append(oid)
     if not listing:
         raise RuntimeError(f"upstream path not found: {repo}/{path}@{ref}")
 
-    listing = [item for item in listing if not _excluded(item, path, exclude)]
-    if not listing:
-        raise RuntimeError(f"every file excluded: {repo}/{path}@{ref}")
-
-    oids = run(["git", "-C", work, "ls-tree", "-r", "--format=%(objectname)", sha, *scope]).decode().split()
     prefetch_blobs(work, [oid for oid in oids if oid])
 
     prefix = "" if path.strip() in ("", ".") else path.strip("/") + "/"
     files = {}
     for item in listing:
         relative = item[len(prefix):] if item.startswith(prefix) else item
+        safe_relative(relative)
         files[relative] = run(["git", "-C", work, "show", f"{sha}:{item}"])
     return files, sha
 
@@ -219,6 +324,7 @@ def prefetch_blobs(work, oids):
 
 def npm_files(package, version, path, exclude=()):
     """Return ({relative path: bytes}, resolved version) for one package directory."""
+    path = safe_relative(path, allow_root=True)
     base = f"{NPM_REGISTRY}/{urllib.parse.quote(package, safe='@')}"
     meta = http_json(f"{base}/latest" if version in ("latest", None) else f"{base}/{version}")
     resolved = meta["version"]
@@ -231,13 +337,17 @@ def npm_files(package, version, path, exclude=()):
         if base64.b64encode(digest).decode() != integrity[len("sha512-"):]:
             raise RuntimeError(f"npm integrity mismatch: {package}@{resolved}")
 
-    prefix = "package/" + path.strip("/") + "/"
+    prefix = "package/" if path == "." else "package/" + path + "/"
     files = {}
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
         for member in archive.getmembers():
+            safe_relative(member.name.rstrip("/"))
+            if member.issym() or member.islnk():
+                raise RuntimeError(f"unsupported archive link: {member.name}")
             if not member.isfile() or not member.name.startswith(prefix):
                 continue
             relative = member.name[len(prefix):]
+            safe_relative(relative)
             if _excluded(relative, ".", exclude):
                 continue
             handle = archive.extractfile(member)
@@ -270,8 +380,12 @@ def latest_revision(upstream, git_base):
 
 
 def local_files(skill_dir):
+    if skill_dir.is_symlink():
+        raise RuntimeError(f"component must not be a symlink: {skill_dir}")
     files = {}
     for path in sorted(skill_dir.rglob("*")):
+        if path.is_symlink():
+            raise RuntimeError(f"component contains a symlink: {path}")
         if not path.is_file() or path.name in SKIP_NAMES:
             continue
         relative = path.relative_to(skill_dir)
@@ -347,15 +461,18 @@ def plan(base, local, upstream):
     return changes
 
 
-def tracked_skills(repo, only):
+def tracked_skills(repo, only, kind="skill"):
     data = json.loads((repo / "skills.json").read_text(encoding="utf-8"))
     selected = []
-    for skill in data.get("skills", []):
+    for skill in data.get(COMPONENTS[kind][0], []):
         if not skill.get("upstream"):
             continue
         if only and skill["name"] not in only:
             continue
         selected.append(skill)
+    missing = set(only) - {entry["name"] for entry in selected}
+    if missing:
+        raise RuntimeError(f"unknown or untracked {kind}: {', '.join(sorted(missing))}")
     return data, selected
 
 
@@ -402,14 +519,14 @@ def parse_github_source(source):
     return repo_part, ref, tree_path or None
 
 
-def cmd_import(repo, name, source, subpath, exclude, category, git_base, license_id=None):
-    """Vendor a third-party skill into the repo and record its upstream pin."""
+def cmd_import(repo, name, source, subpath, exclude, category, git_base, license_id=None, kind="skill"):
+    """Vendor a component and commit its contents and upstream pin together."""
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name):
-        print(f"error: invalid skill name {name!r} (lowercase letters, digits, hyphens)", file=sys.stderr)
+        print(f"error: invalid component name {name!r} (lowercase letters, digits, hyphens)", file=sys.stderr)
         return 2
-    skill_dir = repo / name
+    skill_dir = component_dir(repo, name, kind)
     if skill_dir.exists():
-        print(f"error: {name}/ already exists; use update for vendored skills", file=sys.stderr)
+        print(f"error: {name}/ already exists; use update for vendored components", file=sys.stderr)
         return 2
 
     if source.startswith("npm:"):
@@ -423,38 +540,48 @@ def cmd_import(repo, name, source, subpath, exclude, category, git_base, license
         upstream = {"type": "github", "repo": repo_part, "path": subpath or tree_path or "."}
         if branch:
             upstream["ref"] = branch
+            upstream["branch"] = branch
     if exclude:
         upstream["exclude"] = exclude
 
-    resolved = pinned_revision(upstream) if upstream.get("ref") or upstream.get("version") else "HEAD"
+    resolved = pinned_revision(upstream) or latest_revision(upstream, git_base)
     files, revision = fetch(upstream, resolved, git_base)
-    if "SKILL.md" not in files:
-        print(f"error: no SKILL.md at {source}/{upstream['path']}", file=sys.stderr)
+    manifest = component_manifest(files, kind)
+    if manifest is None:
+        print(f"error: missing {kind} manifest at {source}/{upstream['path']}", file=sys.stderr)
         return 2
-
-    for relative, payload in files.items():
-        target = skill_dir / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(payload)
     upstream["ref" if upstream["type"] == "github" else "version"] = revision
-    upstream["license"] = license_id or lookup_license(repo, name, source)
     upstream["synced_at"] = date.today().isoformat()
-
     data = json.loads((repo / "skills.json").read_text(encoding="utf-8"))
+    if any(entry["name"] == name for entry in data.get(COMPONENTS[kind][0], [])):
+        raise RuntimeError(f"{kind} already registered: {name}")
+    # Read package metadata from staging, before exposing any new repository files.
+    with tempfile.TemporaryDirectory(prefix="sync-import-") as temporary:
+        staged = Path(temporary)
+        for relative, payload in files.items():
+            target = staged / safe_relative(relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(payload)
+        upstream["license"] = license_id or lookup_license(staged.parent, staged.name, source)
+        description = frontmatter_description(staged) or ""
+        if kind != "skill":
+            description = json.loads(files[manifest]).get("description", "")
+            if not isinstance(description, str):
+                raise RuntimeError(f"{manifest} description must be a string")
     entry = {
         "name": name,
         "category": category,
-        "description": frontmatter_description(skill_dir) or "",
+        "description": description,
         "files": sorted(files),
         "upstream": upstream,
     }
-    data["skills"].append(entry)
-    (repo / "skills.json").write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    data.setdefault(COMPONENTS[kind][0], []).append(entry)
+    commit_component(repo, skill_dir, files, data)
 
     print(f"imported {name}: {len(files)} file(s) at {revision[:12]}")
     print("next: add a README entry, then run scripts/validate_repo.py")
-    print("install is manual: python3 scripts/install_skills.py link --skill " + name)
+    if kind == "skill":
+        print("install is manual: python3 scripts/install_skills.py link --skill " + name + " --host <agent>")
     return 0
 
 
@@ -489,15 +616,15 @@ def frontmatter_description(skill_dir):
     return None
 
 
-def cmd_check(repo, only, git_base):
+def cmd_check(repo, only, git_base, kind="skill"):
     reset_caches()
-    _, skills = tracked_skills(repo, only)
+    _, skills = tracked_skills(repo, only, kind)
     drift = 0
     for skill in skills:
         upstream = skill["upstream"]
         base, base_rev = fetch(upstream, pinned_revision(upstream), git_base)
         latest, latest_rev = fetch(upstream, latest_revision(upstream, git_base), git_base)
-        local = local_files(repo / skill["name"])
+        local = local_files(component_dir(repo, skill["name"], kind))
         changes = plan(base, local, latest)
         actionable = [c for c in changes if c[0] not in ("keep", "keep-deleted")]
         if latest != base:
@@ -513,7 +640,7 @@ def cmd_check(repo, only, git_base):
         if actionable:
             drift += 1
             report(skill["name"], changes, verbose=True, header=False)
-        elif status == "pin behind":
+        elif latest_rev != base_rev:
             drift += 1
     return 1 if drift else 0
 
@@ -522,11 +649,11 @@ def update_files_list(skill_dir, entry):
     entry["files"] = sorted(local_files(skill_dir))
 
 
-def cmd_update(repo, only, apply, git_base):
+def cmd_update(repo, only, apply, git_base, kind="skill"):
     reset_caches()
-    data, skills = tracked_skills(repo, only)
+    data, skills = tracked_skills(repo, only, kind)
     if not skills:
-        print("no skill declares an upstream block", file=sys.stderr)
+        print(f"no {kind} declares an upstream block", file=sys.stderr)
         return 2
 
     conflicts = 0
@@ -534,8 +661,9 @@ def cmd_update(repo, only, apply, git_base):
     pending = 0
     for skill in skills:
         name = skill["name"]
-        upstream = skill["upstream"]
-        skill_dir = repo / name
+        candidate = copy.deepcopy(skill)
+        upstream = candidate["upstream"]
+        skill_dir = component_dir(repo, name, kind)
         base, base_rev = fetch(upstream, pinned_revision(upstream), git_base)
         latest, latest_rev = fetch(upstream, latest_revision(upstream, git_base), git_base)
         local = local_files(skill_dir)
@@ -543,13 +671,23 @@ def cmd_update(repo, only, apply, git_base):
 
         actionable = [c for c in changes if c[0] not in ("keep", "keep-deleted")]
         if not actionable:
+            if latest_rev != base_rev:
+                pending += 1
             if latest_rev != base_rev and apply:
                 upstream["ref" if upstream["type"] == "github" else "version"] = latest_rev
                 upstream["synced_at"] = date.today().isoformat()
+                candidate["files"] = sorted(local)
+                replacement = copy.deepcopy(data)
+                replacement[COMPONENTS[kind][0]][data[COMPONENTS[kind][0]].index(skill)] = candidate
+                save_registry(repo, replacement)
+                data = replacement
                 changed.append(name)
                 print(f"{name}: content unchanged, pin advanced {base_rev[:12]} -> {latest_rev[:12]}")
             else:
-                print(f"{name}: up to date ({base_rev[:12]})")
+                if latest_rev != base_rev:
+                    print(f"{name}: pin behind ({base_rev[:12]} -> {latest_rev[:12]})")
+                else:
+                    print(f"{name}: up to date ({base_rev[:12]})")
             continue
 
         pending += 1
@@ -562,17 +700,24 @@ def cmd_update(repo, only, apply, git_base):
         if not apply:
             continue
 
+        final = dict(local)
         for action, path, payload, _ in changes:
-            target = skill_dir / path
+            safe_relative(path)
             if action in ("update", "merge", "add"):
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(payload)
+                final[path] = payload
             elif action == "delete":
-                target.unlink(missing_ok=True)
+                final.pop(path, None)
+
+        if component_manifest(final, kind) is None:
+            raise RuntimeError(f"update would remove the {kind} manifest: {name}")
 
         upstream["ref" if upstream["type"] == "github" else "version"] = latest_rev
         upstream["synced_at"] = date.today().isoformat()
-        update_files_list(skill_dir, skill)
+        candidate["files"] = sorted(final)
+        replacement = copy.deepcopy(data)
+        replacement[COMPONENTS[kind][0]][data[COMPONENTS[kind][0]].index(skill)] = candidate
+        commit_component(repo, skill_dir, final, replacement)
+        data = replacement
         changed.append(name)
         print(f"{name}: applied -> {latest_rev[:12]}")
 
@@ -581,9 +726,6 @@ def cmd_update(repo, only, apply, git_base):
         return 1 if pending or conflicts else 0
 
     if changed:
-        (repo / "skills.json").write_text(
-            json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-        )
         print(f"\nupdated skills.json for: {', '.join(changed)}")
     return 1 if conflicts else 0
 
@@ -604,13 +746,15 @@ def frontmatter_name(skill_dir):
 
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("command", choices=["check", "update", "import"])
-    parser.add_argument("--skill", action="append", default=[], help="limit to one skill (repeatable)")
+    parser.add_argument("--kind", choices=COMPONENTS, default="skill")
+    parser.add_argument("--skill", "--component", dest="skill", action="append", default=[],
+                        help="limit to one component (repeatable)")
     parser.add_argument("--apply", action="store_true", help="write changes and update skills.json")
     parser.add_argument("--source", help="import: owner/repo, GitHub URL, or npm:<package>")
-    parser.add_argument("--name", help="import: local skill directory name (defaults to the upstream basename)")
+    parser.add_argument("--name", help="import: local component name (defaults to the upstream basename)")
     parser.add_argument("--path", help="import: directory inside the source (default: repo/package root)")
     parser.add_argument("--exclude", action="append", default=[], help="import: glob to skip (repeatable)")
     parser.add_argument("--category", default="uncategorized", help="import: skills.json category")
@@ -619,7 +763,7 @@ def main():
     parser.add_argument("--git-base", default=os.environ.get("SYNC_UPSTREAM_GIT_BASE", DEFAULT_GIT_BASE),
                         help="git host for github upstreams (default: https://github.com)")
     parser.add_argument("--repo", default=str(Path(__file__).resolve().parent.parent))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     repo = Path(args.repo).resolve()
     try:
@@ -628,11 +772,11 @@ def main():
                 parser.error("import requires --source")
             name = args.name or import_name(args.source, args.path)
             return cmd_import(repo, name, args.source, args.path, args.exclude,
-                              args.category, args.git_base, args.license_id)
+                              args.category, args.git_base, args.license_id, args.kind)
         if args.command == "check":
-            return cmd_check(repo, set(args.skill), args.git_base)
-        return cmd_update(repo, set(args.skill), args.apply, args.git_base)
-    except (RuntimeError, urllib.error.URLError, KeyError, tarfile.TarError) as error:
+            return cmd_check(repo, set(args.skill), args.git_base, args.kind)
+        return cmd_update(repo, set(args.skill), args.apply, args.git_base, args.kind)
+    except (RuntimeError, OSError, ValueError, KeyError, tarfile.TarError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

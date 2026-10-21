@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Offline stdlib-only consistency validator for the my-skills repo."""
+"""Offline stdlib-only consistency validator for csl-agent-toolbox."""
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+from sync_upstream import COMPONENTS, component_dir
 
 HOME_PATH_RE = re.compile(r"/(?:Users|home)/[^/\s]+")
 
@@ -17,6 +19,31 @@ def load_json(path):
 def check_skills(repo):
     errors = []
     data = load_json(repo / "skills.json")
+    for kind, (key, _) in COMPONENTS.items():
+        seen = set()
+        for entry in data.get(key, []):
+            name = entry.get("name", "")
+            if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", name) or name in seen:
+                errors.append(f"invalid or duplicate {kind} name: {name!r}")
+                continue
+            seen.add(name)
+            root = component_dir(repo, name, kind)
+            if not root.is_dir() or not root.resolve().is_relative_to(repo.resolve()):
+                errors.append(f"{kind} directory missing or outside repository: {name}")
+                continue
+            for rel in entry.get("files", []):
+                file = root / rel
+                if not file.is_file() or not file.resolve().is_relative_to(root.resolve()):
+                    errors.append(f"invalid {kind} file: {name}/{rel}")
+            if kind == "plugin" and not any((root / manifest).is_file() for manifest in
+                    ("plugin.json", ".codex-plugin/plugin.json", ".claude-plugin/plugin.json", "package.json")):
+                errors.append(f"plugin manifest missing: {name}")
+            if kind == "mcp":
+                try:
+                    from toolbox import mcp_server
+                    mcp_server(root, name)
+                except (ValueError, OSError, KeyError) as error:
+                    errors.append(f"invalid MCP package {name}: {error}")
     for skill in data.get("skills", []):
         name = skill.get("name")
         if not name:
@@ -38,7 +65,8 @@ def check_upstreams(repo):
     errors = []
     data = load_json(repo / "skills.json")
     names = {s.get("name") for s in data.get("skills", [])}
-    for skill in data.get("skills", []):
+    entries = [entry for key, _ in COMPONENTS.values() for entry in data.get(key, [])]
+    for skill in entries:
         name = skill.get("name")
         for dep in skill.get("depends_on", []):
             if dep not in names:
