@@ -199,7 +199,8 @@
       "files": [
         "SKILL.md",
         "references/behavior-prompts.md"
-      ]
+      ],
+      "source_note": "Adapted 2026-09-01 from an engineering-discipline gist whose URL was never recorded; the SKILL.md structure, trigger description, and the three behavior-prompts in references/ are original. Treated as a local skill, not a vendored third-party skill."
     },
     {
       "name": "thermo-nuclear-code-quality-review",

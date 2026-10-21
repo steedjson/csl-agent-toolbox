@@ -44,6 +44,7 @@ Follow portable Agent Skills layout.
 
 - Skill folder name: lowercase letters, digits, hyphens; maximum 64 characters.
 - `SKILL.md` frontmatter: prefer only `name` and `description` for portable skills. Preserve intentional legacy fields in existing skills unless task requires migration.
+- A skill adapted from an unpinnable source (a gist, an article, a chat) carries a `source_note` field in its `skills.json` entry recording what was adapted, when, and which parts are original. `source_note` is provenance memory, not a sync contract; it never replaces `upstream` (which is for pinnable sources).
 - `description`: state capability and trigger conditions. Put operational workflow in body.
 - `README.md`: optional. Do not create auxiliary docs solely to satisfy installer.
 - Add reusable scripts only when deterministic execution or meaningful reuse warrants them. Test every added script.
