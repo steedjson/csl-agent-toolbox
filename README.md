@@ -112,6 +112,18 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 落地页、作品集与改版的反模板化前端设计方向：先读 brief 推断设计意图，再选设计系统与三个设计旋钮，校准排版/配色/布局，最后过一遍反 AI 套路预检清单。上游为 `tasteskill`（npm `natureco-cli` 内的 `skills/taste-skill`），按 `skills.json` 的 `upstream` 固定版本同步。
 
+#### [frontend-design](./frontend-design/)
+
+Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规划颜色、字体与布局，再实现并自查，覆盖响应式、可访问性、动效和界面文案。原入口为 [claude-code 的 frontend-design 插件](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design)；导入时确认技能正文与官方 [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 版本逐字节一致，使用后者完整携带的 `LICENSE.txt`（Apache-2.0），按 `skills.json` 的 `upstream` 固定 commit 同步。
+
+#### [antd-component-lookup](./antd-component-lookup/)
+
+查询 Ant Design React 组件的 API、默认值、类型和用法示例，通过官网组件页面与 `llms.txt` / `llms-full.txt` 获取文档。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-component-lookup`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
+
+#### [antd-theme-customization](./antd-theme-customization/)
+
+使用 Design Tokens 和 `ConfigProvider` 定制 Ant Design 主题，覆盖全局与组件级样式、暗色模式、CSS 变量和 Token 提取。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-theme-customization`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
+
 #### [ego-browser](./ego-browser/)
 
 面向 AI Agent 的 Chromium 浏览器自动化：打开/操作网站、填表、点按钮、截图、提取页面数据、用已登录站点完成 Web 测试与 QA。用法以 `ego-browser skill` 输出的指南为准（随安装版本变化）；`references/install.md` 覆盖安装与升级，`learnings/` 内置 GitHub/Google/X 站点的沉淀工具脚本。上游为 [citrolabs/ego-lite](https://github.com/citrolabs/ego-lite)（MIT），即 `npx skills add citrolabs/ego-lite` 背后的同一目录，按 `skills.json` 的 `upstream` 固定 commit 同步。
