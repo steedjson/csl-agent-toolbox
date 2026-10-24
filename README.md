@@ -116,6 +116,18 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规划颜色、字体与布局，再实现并自查，覆盖响应式、可访问性、动效和界面文案。原入口为 [claude-code 的 frontend-design 插件](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design)；导入时确认技能正文与官方 [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 版本逐字节一致，使用后者完整携带的 `LICENSE.txt`（Apache-2.0），按 `skills.json` 的 `upstream` 固定 commit 同步。
 
+#### [creative-direction](./creative-direction/)
+
+把模糊的创意意图整理成可供设计、文案与艺术指导复用的美学简报：确定语气、美学取向、受众关系和感官体验，记录参考、排除项与待决问题。上游为 [rampstackco/claude-skills](https://github.com/rampstackco/claude-skills/tree/main/dist/codex/.agents/skills/creative-direction)（MIT），使用其 Codex 兼容发行目录，保留三个参考文件与原始目录元数据，按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
+
+#### [ui-design-system](./ui-design-system/)
+
+设计系统工具包：生成颜色、字体、间距等 Design Tokens，规划组件体系、响应式布局和开发交付。选用 [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills/tree/main/product-team/skills/ui-design-system) 版本（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。本地修正文档中的 CLI 参数写法，并补齐 SCSS 导出。
+
+#### [css-animation-creator](./css-animation-creator/)
+
+网页动效工具包：CSS transitions、关键帧、微交互、加载状态、页面过渡与滚动动画，包含 Tailwind、Framer Motion、性能和减少动态效果偏好的参考。上游为 [OneWave-AI/claude-skills](https://github.com/OneWave-AI/claude-skills/tree/main/css-animation-creator)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
+
 #### [antd-component-lookup](./antd-component-lookup/)
 
 查询 Ant Design React 组件的 API、默认值、类型和用法示例，通过官网组件页面与 `llms.txt` / `llms-full.txt` 获取文档。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-component-lookup`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
@@ -123,6 +135,28 @@ Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规�
 #### [antd-theme-customization](./antd-theme-customization/)
 
 使用 Design Tokens 和 `ConfigProvider` 定制 Ant Design 主题，覆盖全局与组件级样式、暗色模式、CSS 变量和 Token 提取。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-theme-customization`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
+
+#### [shadcn](./shadcn/)
+
+React shadcn/ui 官方 Skill：查询与安装组件、组合表单与聊天界面、定制主题、使用组件 registry 和 preset，并检查设计系统展示页的组件覆盖。上游为 [shadcn-ui/ui](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE.md`。
+
+#### [shadcn-vue](./shadcn-vue/)
+
+Vue 3 shadcn-vue 官方 Skill：组件查询、安装与组合，表单、主题、registry 和 preset 用法；Vue 项目使用此技能。上游为 [unovue/shadcn-vue](https://github.com/unovue/shadcn-vue/tree/dev/skills/shadcn-vue)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
+
+两个 shadcn 技能均做最小可移植适配：描述明确 React / Vue 3 适用范围；将 Claude 专用的动态命令插值改成显式执行项目上下文查询；原 `user-invocable: false` 以 `metadata.upstream-user-invocable` 字符串保留来源记录，宿主是否提供手动入口由宿主决定。
+
+#### [mantine-form](./mantine-form/)
+
+Mantine 官方 React 表单 Skill：`useForm`、非受控表单、校验、嵌套字段、数组字段和跨组件表单状态。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-form)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
+
+#### [mantine-combobox](./mantine-combobox/)
+
+Mantine 官方 React 下拉选择 Skill：先选用现成组件，再按需组合 `Combobox`，覆盖搜索、多选、自定义选项与键盘交互。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-combobox)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
+
+#### [mantine-custom-components](./mantine-custom-components/)
+
+Mantine 官方 React 自定义组件 Skill：使用 factory、Styles API、CSS 变量、复合组件和 `MantineProvider` 接入主题。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-custom-components)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
 #### [ego-browser](./ego-browser/)
 

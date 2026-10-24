@@ -2,6 +2,13 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-10-24][ui-design-system] 上游文档命令不可执行且 SCSS 导出缺少实现
+- 现象: 按 SKILL.md 的位置参数示例执行时退出码为 2;使用 --format scss 时抛出 AttributeError
+- 根因: CLI 已改为 --style / --format,文档仍使用位置参数;export_tokens 调用未实现的 _export_as_scss
+- 修法: 同步技能正文、参考文档与脚本示例的参数写法;复用 CSS 声明导出 SCSS 变量;回归覆盖三种风格和四种输出格式
+- 关联: ui-design-system/scripts/design_token_generator.py、scripts/test_design_token_generator.py
+- 教训: 导入附带脚本的技能时,必须实际执行文档命令与承诺的输出格式
+
 ## [2026-10-22][zcode-adapter] 只按 PATH 检查宿主,漏掉桌面附带运行时与原生配置
 - 现象: 适配矩阵把 ZCode 标为仅 Skill 路径占位,未确认发现,无 MCP 和插件适配
 - 根因: 没有 zcode PATH 命令就认定本机没有运行时;未检查桌面包内 CLI 和配置指南
