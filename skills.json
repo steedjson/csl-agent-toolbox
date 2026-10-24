@@ -15,7 +15,7 @@
     {
       "name": "grok-build-cli",
       "category": "models-and-routing",
-      "description": "Invoke the locally installed Grok Build CLI from Codex and return Grok's response",
+      "description": "Invoke the locally installed Grok Build CLI from any host agent and return Grok's response",
       "files": [
         "SKILL.md",
         "agents/openai.yaml"

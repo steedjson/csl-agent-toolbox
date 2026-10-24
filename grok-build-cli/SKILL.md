@@ -1,12 +1,13 @@
 ---
 name: grok-build-cli
-description: Invoke the locally installed Grok Build CLI from Codex and return Grok's response. Use whenever the user asks Codex to call, consult, run, or delegate a prompt to Grok or Grok Build, including Grok web/X searches and agentic Grok tasks. This Skill covers only the invocation mechanism, process monitoring, and response capture; it does not prescribe the task itself.
+description: Invoke the locally installed Grok Build CLI and return Grok's response. Use whenever the user asks the agent to call, consult, run, or delegate a prompt to Grok or Grok Build, including Grok web/X searches and agentic Grok tasks. This Skill covers only the invocation mechanism, process monitoring, and response capture; it does not prescribe the task itself.
 ---
 
 # Call Grok Build
 
-Call the local `grok` CLI from Codex. Do not add an unrelated research,
-download, editing, or production workflow.
+Call the local `grok` CLI from any host agent (Codex, ZCode, Claude Code, or a
+plain shell). Do not add an unrelated research, download, editing, or
+production workflow.
 
 ## Check availability
 
@@ -52,17 +53,20 @@ grok --prompt-file '/absolute/path/prompt.md' \
 Use `--model MODEL` only when the user requests a particular available model.
 Otherwise use Grok's configured default.
 
-## Run from Codex
+## Run from the host agent
 
-1. For a long prompt, create `prompt.md` with `apply_patch`; avoid fragile shell
-   quoting.
-2. Start Grok with `exec_command`, normally using `yield_time_ms: 1000`.
-3. If the command returns a session ID, poll it with `write_stdin`, sending an
-   empty string and waiting at most 30 seconds per poll.
-4. Share a concise progress update when a call runs longer than 60 seconds.
-5. Capture Grok's final stdout. Treat a nonzero exit code, `Max turns reached`,
+1. For a long prompt, write `prompt.md` with the host's file-writing tool
+   (file edit, `apply_patch`, or a Bash heredoc); avoid fragile shell quoting.
+2. Start Grok through the host's shell tool. Prefer running it to completion
+   in the foreground with a generous timeout. If the host returns only a
+   session or background ID instead, poll for completion, waiting at most 30
+   seconds per poll. Host mapping: Codex uses `exec_command` plus
+   `write_stdin`; ZCode and Claude Code use the Bash tool (foreground with a
+   timeout, or background with `&` into an output file, then poll that file).
+3. Share a concise progress update when a call runs longer than 60 seconds.
+4. Capture Grok's final stdout. Treat a nonzero exit code, `Max turns reached`,
    or empty final output as failure.
-6. Return Grok's answer to the user, clearly identified as Grok's result when
+5. Return Grok's answer to the user, clearly identified as Grok's result when
    attribution matters.
 
 ## Isolation
