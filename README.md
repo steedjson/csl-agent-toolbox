@@ -184,6 +184,10 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 `grill-me` 是 `/grill-me` 的显式入口（`disable-model-invocation: true`），正文只转调 `grilling`；`grilling` 才是实际工作流：把计划或决策展开成设计树，按轮次追问整个 frontier，每问附带推荐答案，直到双方理解一致。两者上游均为 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）；`grill-me` 在 `skills.json` 里以 `depends_on: ["grilling"]` 声明依赖，只装前者不会工作。
 
+#### [wechat-article-reader](./wechat-article-reader/)
+
+读取微信公众号公开单篇文章，提取正文、标题、作者、公众号名与发布时间，按需总结、翻译或保存 Markdown。网页工具失败时使用本地 HTTPS 备用流程，包含请求限时、链接与重定向校验、正文验收及防覆盖保存规则。来源为用户提供的技能包，经本地重写修订；来源记录见 `skills.json` 的 `source_note`。已通过单篇真实文章备用抓取实测，图片与异常分支未验证。
+
 ## Codex 插件
 
 `plugins/` 存放宿主原生插件包，兼容性由插件 manifest 决定。插件登记在 `skills.json` 的 `plugins` 数组；`.agents/plugins/marketplace.json` 是供 Codex 发现和安装插件的 marketplace 目录。当前插件包含 hook，安装后需显式信任并验证激活。

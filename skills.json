@@ -773,6 +773,15 @@
         "synced_at": "2026-10-24",
         "license": "MIT"
       }
+    },
+    {
+      "name": "wechat-article-reader",
+      "category": "productivity",
+      "description": "当用户发来微信公众号公开单篇文章链接（mp.weixin.qq.com），要求读取、总结、翻译或保存正文、标题、作者、公众号名及发布时间时使用。不用于视频号、关键词搜索或整号批量导出。",
+      "files": [
+        "SKILL.md"
+      ],
+      "source_note": "Adapted 2026-11-01 from user-supplied wechat-article-reader.zip (SHA-256 60584ea972ddc6d862a8a17c953bbd2ed63f5751e176fa22be42698cd51e17e7); original author, upstream repository and license were not provided. Locally rewritten workflow adds portable tool selection, bounded requests, URL/redirect validation, article-content acceptance, metadata handling and safe optional saving, and removes unverified service/vulnerability assertions. Single-article local HTTPS fallback and metadata extraction were exercised on 2026-11-01; other branches remain unverified. This is an unpinnable attachment adaptation, not an upstream sync contract."
     }
   ],
   "plugins": [
