@@ -39,9 +39,12 @@ HOSTS = {
 
 
 def repo_skills():
-    """Return {skill name: directory} for every root-level skill in this repository."""
+    """Return {skill name: directory} for every package under skills/."""
     skills = {}
-    for entry in sorted(REPO.iterdir()):
+    root = REPO / "skills"
+    if not root.is_dir():
+        return skills
+    for entry in sorted(root.iterdir()):
         if entry.is_dir() and (entry / "SKILL.md").is_file():
             skills[entry.name] = entry
     return skills
@@ -116,8 +119,8 @@ def cmd_status(selected_hosts, selected_skills):
         if not root.is_dir():
             print(f"{host}: {root} does not exist")
             continue
-        if root.is_symlink() and same_path(root, REPO):
-            print(f"{host}: {root} -> direct connection (directory symlink to the repository)")
+        if root.is_symlink() and same_path(root, REPO / "skills"):
+            print(f"{host}: {root} -> direct connection (directory symlink to repository skills/)")
             print(f"  all {len(skills)} repository skill(s) visible; nothing to link or unlink")
             continue
         counts = {"ok": 0, "elsewhere": 0, "missing": 0, "real-directory": 0}
@@ -150,8 +153,8 @@ def cmd_link(selected_hosts, selected_skills, prune, dry_run):
     changed = 0
     blocked = False
     for host, root in host_paths(selected_hosts).items():
-        if root.is_symlink() and same_path(root, REPO):
-            print(f"error: {host} skills root links to the repository; replace the root mount first", file=sys.stderr)
+        if root.is_symlink() and any(same_path(root, source) for source in (REPO, REPO / "skills")):
+            print(f"error: {host} skills root links to repository sources; replace the root mount first", file=sys.stderr)
             return 2
         for name, source in wanted.items():
             link = root / name

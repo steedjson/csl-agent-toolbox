@@ -6,7 +6,7 @@ import sys
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "ui-design-system/scripts/design_token_generator.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "skills/ui-design-system/scripts/design_token_generator.py"
 
 
 class DesignTokenGeneratorTests(unittest.TestCase):

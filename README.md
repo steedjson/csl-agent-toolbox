@@ -5,7 +5,7 @@
 仓库布局：
 
 - `skills.json`：统一组件目录，含 `skills`、`plugins`、`mcps`；保留文件名以兼容已有工具。`category` 仅用于分类展示，不决定路径。
-- `<skill-name>/`：根目录下每个含 `SKILL.md` 的目录是一个独立可分发 Skill。
+- `skills/<skill-name>/`：所有独立可分发 Skill 集中在 `skills/`，各自包含 `SKILL.md`。
 - `plugins/<plugin-name>/`：宿主原生插件包，按 manifest 判断支持的宿主。
 - `mcp/<name>/mcp.json`：独立 MCP 配置包；当前尚未收录独立 MCP。
 - `.agents/plugins/marketplace.json`：仓库插件 marketplace 目录。
@@ -28,163 +28,163 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 ## Skills 列表
 
-其他已登记入口：[frontend-ui-ux-design](./frontend-ui-ux-design/)、[agent-reach](./agent-reach/)、[grill-with-docs](./grill-with-docs/)、[domain-modeling](./domain-modeling/)、[reverse-engineer-anything](./reverse-engineer-anything/)。完整来源和固定版本以 `python3 scripts/toolbox.py list` 为准。
+其他已登记入口：[frontend-ui-ux-design](./skills/frontend-ui-ux-design/)、[agent-reach](./skills/agent-reach/)、[grill-with-docs](./skills/grill-with-docs/)、[domain-modeling](./skills/domain-modeling/)、[reverse-engineer-anything](./skills/reverse-engineer-anything/)。完整来源和固定版本以 `python3 scripts/toolbox.py list` 为准。
 
 ### 模型与路由（models-and-routing）
 
-#### [codexradar-model-advisor](./codexradar-model-advisor/)
+#### [codexradar-model-advisor](./skills/codexradar-model-advisor/)
 
 读取 CodexRadar 当前实测数据与 15 天社区评分历史，为 OpenAI Codex 模型和 reasoning effort 提供质量、速度、成本建议。仅推荐当前有实测数据的组合，支持 Codex、Claude Code 和其他 Agent Skills 兼容宿主。
 
-#### [grok-build-cli](./grok-build-cli/)
+#### [grok-build-cli](./skills/grok-build-cli/)
 
 让 Codex 调用本机 `grok` CLI：检查可用模型与凭据、选择单轮或 agentic 调用、轮询长任务并返回结果。只覆盖调用机制，不规定任务内容。凭据可以是 `~/.grok/config.toml` 模型 key、已缓存的 `auth.json`，或环境变量 `XAI_API_KEY`；不必先 `grok login`。源： [Pluviobyte/rnskill](https://github.com/Pluviobyte/rnskill/tree/main/skills/grok-build-cli)，可用性检查已按官方认证方式放宽。
 
 ### 媒体生成（media-generation）
 
-#### [custom-image-gen](./custom-image-gen/)
+#### [custom-image-gen](./skills/custom-image-gen/)
 
 通过 `image_auth.json` 和当前 Codex provider 配置解析自定义图片生成端点与凭据（Key 缺失时回退 `auth.json` 的 `OPENAI_API_KEY`），再复用系统 `imagegen` Skill 和 CLI。仅负责 provider 适配，不复制系统图片生成工作流。
 
-#### [gemini-banana-image](./gemini-banana-image/)
+#### [gemini-banana-image](./skills/gemini-banana-image/)
 
 使用 Google Gemini 图像模型（默认 `gemini-3.1-flash-image`，亦支持 `gemini-3-pro-image-preview` / Nano Banana Pro）文生图与图生图。支持多层级配置解析：优先读取自定义中转端点（`base_url` 与 `api_key`），无配置或指定 `--official` 时自动回退 Google 官方端点；支持 1K/2K/4K 分辨率、多种画幅比例以及 Thinking 链流式结果提取。默认存储于系统临时目录避免污染代码库。
 
-#### [grok-image](./grok-image/)
+#### [grok-image](./skills/grok-image/)
 
 使用 xAI Grok 图像模型（默认 `grok-imagine-image`，亦支持 `grok-2-image`）文生图。支持多层级配置解析：优先读取自定义中转端点（`base_url` 与 `api_key`），自动兼容本地既有 `~/.grok/config.toml` 配置与 `~/.config/grok-image/config.json`，无配置或指定 `--official` 时自动回退 xAI 官方端点；支持 Base64 / URL 双重响应解码。默认存储于系统临时目录避免污染代码库。
 
-#### [candid-character-image-prompts](./candid-character-image-prompts/)
+#### [candid-character-image-prompts](./skills/candid-character-image-prompts/)
 
 生成成年虚构角色的偷拍感 COS / 角色摄影图片提示词：公共日常场景、隐蔽机位、长焦或手机抓拍、不完美构图，支持 `n=10` 十种独立构图。
 
 ### 框架工作流（framework-workflows）
 
-#### [yapi-copilot](./yapi-copilot/)
+#### [yapi-copilot](./skills/yapi-copilot/)
 
 基于 YApi 官方原生 REST API 自动化维护接口文档（分类、接口契约、JSON-Schema 增量合入），替代脆弱易错的浏览器网页点选。内置 macOS Chrome 本地已登录 Cookie 自动解密，支持零配置免手动抓包鉴权。
 
-#### [django-development](./django-development/)
+#### [django-development](./skills/django-development/)
 
 在任意 Django 后端项目中发现并遵循现有约定，完成实现、调试、审查或审计。覆盖原生 Django、Django REST Framework、Django Ninja，以及 API、Service/用例、模型、迁移、Admin、Form、后台任务、信号、管理命令、设置和测试。
 
-#### [django-test-sandbox](./django-test-sandbox/)
+#### [django-test-sandbox](./skills/django-test-sandbox/)
 
 给 Django 项目落地实测验证过的内存测试沙盒（SQLite `:memory:` + 禁迁移 + PG 字段建表垫片 + 探针门禁）：纯逻辑测试不连库，ORM 查询语义测试在内存 SQLite 真实执行；含可选的 `manage.py test` 入口接管模板。已在 Django 4.2.16 + pytest-django 4.9 + pytest 8.3 实测（2026-10，phekda 首跑）。
 
-#### [csl-django42-project-init](./csl-django42-project-init/)
+#### [csl-django42-project-init](./skills/csl-django42-project-init/)
 
 按个人 Django 项目基线（提炼自 wework/backend + stdkit v1.2.6 源码快照）一次性初始化新后端项目：确定性渲染熟悉的 `apps/ + common/ + 配置包` 目录结构、View/Service/JWT 认证中间件通用基建、uuid 主键 + 软删除模型基座、内嵌 `stdkit/` 私有基础库（传递依赖固化在 requirements，不入库）、`make check/verify` 质量门禁、docs 与 AGENTS.md 骨架，并按需生成业务 app 骨架。只管新项目初始化；存量项目扫描走 `/csl-init-project`。
 
 ### 代码质量（code-quality）
 
-#### [thermo-nuclear-code-quality-review](./thermo-nuclear-code-quality-review/)
+#### [thermo-nuclear-code-quality-review](./skills/thermo-nuclear-code-quality-review/)
 
 对代码变更执行极严格的可维护性审查：抽象边界、超大文件、分支复杂度、重复逻辑和结构性简化机会。适合明确要求深度或严苛代码质量审查的场景；不替代功能正确性、安全性或测试审查。
 
-#### [coding-discipline](./coding-discipline/)
+#### [coding-discipline](./skills/coding-discipline/)
 
 把 Gist 中的工程准则转成 Codex 可调用 Skill：面向非琐碎或高风险实现，先理解真实流程，再做最小精准修改；对重要取舍显式说明；修复根因并按风险验证。含三条行为反测 prompt，不替代框架工作流或专门代码审查。
 
 ### 项目检索（project-search）
 
-#### [xerj](./xerj/)
+#### [xerj](./skills/xerj/)
 
 用本机已安装的 XERJ 服务检索当前项目的索引源码与文档：从目标项目工作目录调用 `xerj-project` wrapper（Git 根绝对路径哈希为独立索引前缀，自动携带端点与鉴权，不打印密钥），支持 `search` / `def` / `query` / `map` / `watch` 等。每个项目独立索引与日志；安装与升级仅限本机 macOS Apple Silicon，官方发布包经 SHA-256 与 GitHub digest 双重校验后原子替换（上游 [xerj-org/xerj](https://github.com/xerj-org/xerj) 为 Apache-2.0 开源；wrapper 三件套为本机自产，不在上游仓库）。默认词法检索而非语义理解，未命中不等于不存在；与 LSP / codegraph 互补，不替代符号引用检查。
 
 ### 工程规划（engineering-planning）
 
-#### [dev-effort-estimator](./dev-effort-estimator/)
+#### [dev-effort-estimator](./skills/dev-effort-estimator/)
 
 把开发任务、文字需求、原型页或 UI 设计稿拆解成可核查的工时评估：WBS 任务分解（0.5–2 人日粒度）、S/M/L/XL 复杂度定档、显式调整因子（熟悉度/耦合/质量/清晰度/协作）、P50/P80 区间输出，附假设清单、Top 风险与收敛建议。原型/设计稿输入时先经 `browser-ui-reader` 转结构化需求清单再估算。方法与编程语言无关，技术栈只作为熟悉度因子进入估算；支持历史 actual 校准。不替代项目管理工具，估算非承诺。
 
 ### 浏览器与 UI（browser-and-ui）
 
-#### [csl-xiaopiu-design-draft-capture](./csl-xiaopiu-design-draft-capture/)
+#### [csl-xiaopiu-design-draft-capture](./skills/csl-xiaopiu-design-draft-capture/)
 
 把 xiaopiu（小PIU）原型项目导出为本地完整设计稿截图：每页一张 PNG、整画布无接缝（画布平铺一次成像，禁滚动拼接），并产出映射页面树身份的 `manifest.json`（页面 ID 即原型树节点 key，供交互式审查员跳回原型的导航键）。内置虚拟滚动 SPA 的硬约束剧本（点树切页、内联样式压制、兄弟页副本隐藏、视口上限适配）。产物是设计稿走查与 UI 审查子智能体的标准输入；通用网页截图不在范围内。
 
-#### [browser-ui-reader](./browser-ui-reader/)
+#### [browser-ui-reader](./skills/browser-ui-reader/)
 
 看本地浏览器页面内容、操作浏览器页面、把 UI 设计图/原型转成结构化需求清单。主体用 `agent-browser`（CDP、可访问性树 `@eN` refs、会话隔离、附着已登录 Chrome），AppleScript+JS 注入作为零配置后备（不重启、直接附着已打开的 Chrome，只读为主）。覆盖公开页读取、已登录页附着（`--auto-connect`/`--cdp` + `--pin-tab`）、SPA 原型逐页爬取（xiaopiu 52 页已验证）、图片批量下载与宽表分段读取。写操作默认逐项确认，只读默认。
 
-#### [design-taste-frontend](./design-taste-frontend/)
+#### [design-taste-frontend](./skills/design-taste-frontend/)
 
 落地页、作品集与改版的反模板化前端设计方向：先读 brief 推断设计意图，再选设计系统与三个设计旋钮，校准排版/配色/布局，最后过一遍反 AI 套路预检清单。上游为 `tasteskill`（npm `natureco-cli` 内的 `skills/taste-skill`），按 `skills.json` 的 `upstream` 固定版本同步。
 
-#### [frontend-design](./frontend-design/)
+#### [frontend-design](./skills/frontend-design/)
 
 Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规划颜色、字体与布局，再实现并自查，覆盖响应式、可访问性、动效和界面文案。原入口为 [claude-code 的 frontend-design 插件](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design)；导入时确认技能正文与官方 [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 版本逐字节一致，使用后者完整携带的 `LICENSE.txt`（Apache-2.0），按 `skills.json` 的 `upstream` 固定 commit 同步。
 
-#### [creative-direction](./creative-direction/)
+#### [creative-direction](./skills/creative-direction/)
 
 把模糊的创意意图整理成可供设计、文案与艺术指导复用的美学简报：确定语气、美学取向、受众关系和感官体验，记录参考、排除项与待决问题。上游为 [rampstackco/claude-skills](https://github.com/rampstackco/claude-skills/tree/main/dist/codex/.agents/skills/creative-direction)（MIT），使用其 Codex 兼容发行目录，保留三个参考文件与原始目录元数据，按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
-#### [ui-design-system](./ui-design-system/)
+#### [ui-design-system](./skills/ui-design-system/)
 
 设计系统工具包：生成颜色、字体、间距等 Design Tokens，规划组件体系、响应式布局和开发交付。选用 [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills/tree/main/product-team/skills/ui-design-system) 版本（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。本地修正文档中的 CLI 参数写法，并补齐 SCSS 导出。
 
-#### [css-animation-creator](./css-animation-creator/)
+#### [css-animation-creator](./skills/css-animation-creator/)
 
 网页动效工具包：CSS transitions、关键帧、微交互、加载状态、页面过渡与滚动动画，包含 Tailwind、Framer Motion、性能和减少动态效果偏好的参考。上游为 [OneWave-AI/claude-skills](https://github.com/OneWave-AI/claude-skills/tree/main/css-animation-creator)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
-#### [antd-component-lookup](./antd-component-lookup/)
+#### [antd-component-lookup](./skills/antd-component-lookup/)
 
 查询 Ant Design React 组件的 API、默认值、类型和用法示例，通过官网组件页面与 `llms.txt` / `llms-full.txt` 获取文档。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-component-lookup`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
 
-#### [antd-theme-customization](./antd-theme-customization/)
+#### [antd-theme-customization](./skills/antd-theme-customization/)
 
 使用 Design Tokens 和 `ConfigProvider` 定制 Ant Design 主题，覆盖全局与组件级样式、暗色模式、CSS 变量和 Token 提取。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-theme-customization`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。
 
-#### [shadcn](./shadcn/)
+#### [shadcn](./skills/shadcn/)
 
 React shadcn/ui 官方 Skill：查询与安装组件、组合表单与聊天界面、定制主题、使用组件 registry 和 preset，并检查设计系统展示页的组件覆盖。上游为 [shadcn-ui/ui](https://github.com/shadcn-ui/ui/tree/main/skills/shadcn)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE.md`。
 
-#### [shadcn-vue](./shadcn-vue/)
+#### [shadcn-vue](./skills/shadcn-vue/)
 
 Vue 3 shadcn-vue 官方 Skill：组件查询、安装与组合，表单、主题、registry 和 preset 用法；Vue 项目使用此技能。上游为 [unovue/shadcn-vue](https://github.com/unovue/shadcn-vue/tree/dev/skills/shadcn-vue)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
 两个 shadcn 技能均做最小可移植适配：描述明确 React / Vue 3 适用范围；将 Claude 专用的动态命令插值改成显式执行项目上下文查询；原 `user-invocable: false` 以 `metadata.upstream-user-invocable` 字符串保留来源记录，宿主是否提供手动入口由宿主决定。
 
-#### [mantine-form](./mantine-form/)
+#### [mantine-form](./skills/mantine-form/)
 
 Mantine 官方 React 表单 Skill：`useForm`、非受控表单、校验、嵌套字段、数组字段和跨组件表单状态。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-form)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
-#### [mantine-combobox](./mantine-combobox/)
+#### [mantine-combobox](./skills/mantine-combobox/)
 
 Mantine 官方 React 下拉选择 Skill：先选用现成组件，再按需组合 `Combobox`，覆盖搜索、多选、自定义选项与键盘交互。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-combobox)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
-#### [mantine-custom-components](./mantine-custom-components/)
+#### [mantine-custom-components](./skills/mantine-custom-components/)
 
 Mantine 官方 React 自定义组件 Skill：使用 factory、Styles API、CSS 变量、复合组件和 `MantineProvider` 接入主题。面向 Mantine 9.x；上游为 [mantinedev/skills](https://github.com/mantinedev/skills/tree/master/skills/mantine-custom-components)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
-#### [ego-browser](./ego-browser/)
+#### [ego-browser](./skills/ego-browser/)
 
 面向 AI Agent 的 Chromium 浏览器自动化：打开/操作网站、填表、点按钮、截图、提取页面数据、用已登录站点完成 Web 测试与 QA。用法以 `ego-browser skill` 输出的指南为准（随安装版本变化）；`references/install.md` 覆盖安装与升级，`learnings/` 内置 GitHub/Google/X 站点的沉淀工具脚本。上游为 [citrolabs/ego-lite](https://github.com/citrolabs/ego-lite)（MIT），即 `npx skills add citrolabs/ego-lite` 背后的同一目录，按 `skills.json` 的 `upstream` 固定 commit 同步。
 
 ### 视觉感知（visual-perception）
 
-#### [perceived-form](./perceived-form/)
+#### [perceived-form](./skills/perceived-form/)
 
 按人眼实际怎么「看见」来诊断和校正图形：负空间、视觉重量、邻近语法、默认态 vs 兼容态、黄金家族尺子、马赫带与光学校正。适用于 UI / 图标 / Logo / 字标 / 生图提示词「几何对齐了仍别扭」。不替代落地页口味（`design-taste-frontend`）或读页面（`browser-ui-reader`）。
 
 ### Skill 管理（skill-management）
 
-#### [ln-install-skill](./ln-install-skill/)
+#### [ln-install-skill](./skills/ln-install-skill/)
 
 用符号链接把本仓库（`csl-agent-toolbox`）中的 Skill 安装、列出、校验或卸载到任意宿主 skills 目录：Claude Code（`~/.claude/skills`）、Codex（`~/.codex/skills`）、跨工具（`~/.agents/skills`）、DSH（`~/.dsh/skills`）、pi（`~/.pi/agent/skills`）、omp（`~/.omp/agent/skills`）、zcode（`~/.zcode/skills`）、cow（`~/cow/skills`），或项目内 `<repo>/.claude/skills` / `<repo>/.agents/skills`。目标宿主必须由用户点名，未点名先询问，不自行探测。只操作 symlink，永远不碰源目录和源 `SKILL.md`，安装与卸载均可逆。本仓库是唯一源；`~/.cc-switch/skills` 只是历史副本位置，不再作为源。
 
-#### [dao-skill](./dao-skill/)
+#### [dao-skill](./skills/dao-skill/)
 
 Skill 元设计器：先把模糊需求归根，再设计、生成、审计、优化或按证据进化可运行的 Skill；也用于评估既有 Skill 仓库、把方法论/文章/代码库转成可执行 Skill 体系。上游 [gnipbao/dao-skill](https://github.com/gnipbao/dao-skill)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步。
 
 ### 生产力（productivity）
 
-#### [grill-me](./grill-me/) / [grilling](./grilling/)
+#### [grill-me](./skills/grill-me/) / [grilling](./skills/grilling/)
 
 `grill-me` 是 `/grill-me` 的显式入口（`disable-model-invocation: true`），正文只转调 `grilling`；`grilling` 才是实际工作流：把计划或决策展开成设计树，按轮次追问整个 frontier，每问附带推荐答案，直到双方理解一致。两者上游均为 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）；`grill-me` 在 `skills.json` 里以 `depends_on: ["grilling"]` 声明依赖，只装前者不会工作。
 
-#### [wechat-article-reader](./wechat-article-reader/)
+#### [wechat-article-reader](./skills/wechat-article-reader/)
 
 读取微信公众号公开单篇文章，提取正文、标题、作者、公众号名与发布时间，按需总结、翻译或保存 Markdown。网页工具失败时使用本地 HTTPS 备用流程，包含请求限时、链接与重定向校验、正文验收及防覆盖保存规则。来源为用户提供的技能包，经本地重写修订；来源记录见 `skills.json` 的 `source_note`。已通过单篇真实文章备用抓取实测，图片与异常分支未验证。
 
@@ -354,35 +354,25 @@ python3 scripts/toolbox.py update --apply
 
 ```
 csl-agent-toolbox/
-├── .agents/
-│   └── plugins/
-│       └── marketplace.json
-├── codexradar-model-advisor/
-│   └── SKILL.md
-├── custom-image-gen/
-│   ├── SKILL.md
-│   └── agents/openai.yaml
-├── django-development/
-│   ├── SKILL.md
-│   └── agents/openai.yaml
-├── browser-ui-reader/
-│   ├── SKILL.md
-│   ├── scripts/
-│   └── references/
-├── csl-xiaopiu-design-draft-capture/
-│   └── SKILL.md
-├── ln-install-skill/
-│   └── SKILL.md
-├── grok-build-cli/
-│   ├── SKILL.md
-│   └── agents/openai.yaml
+├── .agents/plugins/marketplace.json
+├── skills/
+│   ├── codexradar-model-advisor/
+│   │   └── SKILL.md
+│   ├── custom-image-gen/
+│   │   ├── SKILL.md
+│   │   └── agents/openai.yaml
+│   ├── browser-ui-reader/
+│   │   ├── SKILL.md
+│   │   ├── scripts/
+│   │   └── references/
+│   └── .../                 # 所有独立 Skill，不按 category 分目录
 ├── plugins/
 │   └── openwolf-codegraph-bridge/
 │       ├── .codex-plugin/plugin.json
 │       └── hooks/
 ├── skills.json
 ├── scripts/toolbox.py
-├── mcp/<name>/mcp.json   # 收录独立 MCP 后创建
+├── mcp/<name>/mcp.json       # 收录独立 MCP 后创建
 ├── AGENTS.md
 └── README.md
 ```

@@ -93,7 +93,7 @@ class GithubFlowTests(unittest.TestCase):
         git("clone", "-q", "--bare", str(self.upstream), str(self.tmp / "upstream.git"), cwd=self.tmp)
 
         self.repo = self.tmp / "repo"
-        skill_dir = self.repo / "demo"
+        skill_dir = self.repo / "skills" / "demo"
         (skill_dir / "agents").mkdir(parents=True)
         (skill_dir / "SKILL.md").write_text("1\n2\n3\n", encoding="utf-8")
         (skill_dir / "agents" / "openai.yaml").write_text("v1\nlocal\n", encoding="utf-8")
@@ -130,21 +130,21 @@ class GithubFlowTests(unittest.TestCase):
         new_sha = self.bump_upstream({"SKILL.md": "1-up\n2\n3\n", "new.md": "n\n"})
         code = sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertEqual(code, 0)
-        self.assertEqual((self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8"), "1-up\n2\n3\n")
-        self.assertEqual((self.repo / "demo" / "new.md").read_text(encoding="utf-8"), "n\n")
-        self.assertIn("local", (self.repo / "demo" / "agents" / "openai.yaml").read_text(encoding="utf-8"))
+        self.assertEqual((self.repo / "skills" / "demo" / "SKILL.md").read_text(encoding="utf-8"), "1-up\n2\n3\n")
+        self.assertEqual((self.repo / "skills" / "demo" / "new.md").read_text(encoding="utf-8"), "n\n")
+        self.assertIn("local", (self.repo / "skills" / "demo" / "agents" / "openai.yaml").read_text(encoding="utf-8"))
         entry = json.loads((self.repo / "skills.json").read_text(encoding="utf-8"))["skills"][0]
         self.assertEqual(entry["upstream"]["ref"], new_sha)
         self.assertEqual(entry["files"], ["SKILL.md", "agents/openai.yaml", "new.md"])
 
     def test_conflict_skips_skill_without_writing(self):
-        original = (self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8")
+        original = (self.repo / "skills" / "demo" / "SKILL.md").read_text(encoding="utf-8")
         self.bump_upstream({"SKILL.md": "1-up\n2-up\n3\n"})
-        (self.repo / "demo" / "SKILL.md").write_text("1-local\n2-local\n3\n", encoding="utf-8")
-        before = (self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8")
+        (self.repo / "skills" / "demo" / "SKILL.md").write_text("1-local\n2-local\n3\n", encoding="utf-8")
+        before = (self.repo / "skills" / "demo" / "SKILL.md").read_text(encoding="utf-8")
         code = sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
         self.assertEqual(code, 1)
-        self.assertEqual((self.repo / "demo" / "SKILL.md").read_text(encoding="utf-8"), before)
+        self.assertEqual((self.repo / "skills" / "demo" / "SKILL.md").read_text(encoding="utf-8"), before)
         entry = json.loads((self.repo / "skills.json").read_text(encoding="utf-8"))["skills"][0]
         self.assertEqual(entry["upstream"]["ref"], self.base)
         self.assertNotEqual(original, before)
@@ -157,10 +157,10 @@ class GithubFlowTests(unittest.TestCase):
     def test_deleted_upstream_file_is_removed(self):
         self.bump_upstream({"new.md": "n\n"})
         sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
-        self.assertTrue((self.repo / "demo" / "new.md").exists())
+        self.assertTrue((self.repo / "skills" / "demo" / "new.md").exists())
         self.bump_upstream({"new.md": None})
         sync.cmd_update(self.repo, set(), apply=True, git_base=self.git_base)
-        self.assertFalse((self.repo / "demo" / "new.md").exists())
+        self.assertFalse((self.repo / "skills" / "demo" / "new.md").exists())
 
 
 class BinaryTests(unittest.TestCase):
@@ -241,7 +241,7 @@ class ImportFlowTests(unittest.TestCase):
     def test_import_subdirectory_records_pin(self):
         code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
-        self.assertEqual(sorted(p.name for p in (self.repo / "demo").iterdir()),
+        self.assertEqual(sorted(p.name for p in (self.repo / "skills" / "demo").iterdir()),
                          ["SKILL.md", "notes.md"])
         entry = json.loads((self.repo / "skills.json").read_text(encoding="utf-8"))["skills"][0]
         self.assertEqual(entry["upstream"]["ref"], self.sha)
@@ -252,18 +252,18 @@ class ImportFlowTests(unittest.TestCase):
     def test_import_repo_root_includes_nested_files(self):
         code = sync.cmd_import(self.repo, "whole", "upstream", ".", [], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
-        self.assertTrue((self.repo / "whole" / "SKILL.md").exists())
-        self.assertTrue((self.repo / "whole" / "skills" / "demo" / "SKILL.md").exists())
-        self.assertTrue((self.repo / "whole" / "README.md").exists())
+        self.assertTrue((self.repo / "skills" / "whole" / "SKILL.md").exists())
+        self.assertTrue((self.repo / "skills" / "whole" / "skills" / "demo" / "SKILL.md").exists())
+        self.assertTrue((self.repo / "skills" / "whole" / "README.md").exists())
 
     def test_import_exclude_drops_paths(self):
         code = sync.cmd_import(self.repo, "whole", "upstream", ".", ["skills/"], "test", git_base=self.git_base)
         self.assertEqual(code, 0)
-        self.assertFalse((self.repo / "whole" / "skills").exists())
-        self.assertTrue((self.repo / "whole" / "SKILL.md").exists())
+        self.assertFalse((self.repo / "skills" / "whole" / "skills").exists())
+        self.assertTrue((self.repo / "skills" / "whole" / "SKILL.md").exists())
 
     def test_import_refuses_existing_directory(self):
-        (self.repo / "demo").mkdir()
+        (self.repo / "skills" / "demo").mkdir(parents=True)
         code = sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", git_base=self.git_base)
         self.assertEqual(code, 2)
 
@@ -295,7 +295,7 @@ class ImportFlowTests(unittest.TestCase):
         git("push", "-q", str(self.tmp / "upstream.git"), "main:main", cwd=self.upstream)
         with self.assertRaisesRegex(RuntimeError, "link"):
             sync.cmd_import(self.repo, "demo", "upstream", "skills/demo", [], "test", self.git_base)
-        self.assertFalse((self.repo / "demo").exists())
+        self.assertFalse((self.repo / "skills" / "demo").exists())
 
 
 class ComponentFlowTests(unittest.TestCase):
@@ -307,6 +307,11 @@ class ComponentFlowTests(unittest.TestCase):
 
     def metadata(self):
         return json.loads((self.repo / "skills.json").read_text())
+
+    def test_component_paths_have_separate_namespaces(self):
+        self.assertEqual(sync.component_dir(self.repo, "demo"), self.repo.resolve() / "skills/demo")
+        self.assertEqual(sync.component_dir(self.repo, "demo", "plugin"), self.repo.resolve() / "plugins/demo")
+        self.assertEqual(sync.component_dir(self.repo, "demo", "mcp"), self.repo.resolve() / "mcp/demo")
 
     def fixture(self, kind, manifest=None):
         manifest = manifest or {"skill": "SKILL.md", "plugin": ".codex-plugin/plugin.json",
@@ -376,26 +381,26 @@ class ComponentFlowTests(unittest.TestCase):
         with patch.object(sync, "save_registry", side_effect=OSError("disk full")):
             with self.assertRaisesRegex(OSError, "disk full"):
                 self.import_package()
-        self.assertFalse((self.repo / "demo").exists())
+        self.assertFalse((self.repo / "skills" / "demo").exists())
         self.assertEqual((self.repo / "skills.json").read_bytes(), before)
-        self.assertFalse(list(self.repo.glob(".sync-*")))
+        self.assertFalse(list((self.repo / "skills").glob(".sync-*")))
 
     def test_update_registry_failure_rolls_back_content(self):
         self.import_package()
         before = (self.repo / "skills.json").read_bytes()
-        old = sync.local_files(self.repo / "demo")
+        old = sync.local_files(self.repo / "skills" / "demo")
         after = dict(old, **{"notes.md": b"v2\n"})
         with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]), \
                 patch.object(sync, "save_registry", side_effect=OSError("disk full")):
             with self.assertRaisesRegex(OSError, "disk full"):
                 sync.cmd_update(self.repo, set(), True, "unused")
-        self.assertEqual(sync.local_files(self.repo / "demo"), old)
+        self.assertEqual(sync.local_files(self.repo / "skills" / "demo"), old)
         self.assertEqual((self.repo / "skills.json").read_bytes(), before)
 
     def test_staging_write_failure_preserves_tree(self):
         self.import_package()
         before = (self.repo / "skills.json").read_bytes()
-        old = sync.local_files(self.repo / "demo")
+        old = sync.local_files(self.repo / "skills" / "demo")
         after = dict(old, **{"notes.md": b"v2\n"})
         original = Path.write_bytes
 
@@ -408,7 +413,7 @@ class ComponentFlowTests(unittest.TestCase):
                 patch.object(Path, "write_bytes", write):
             with self.assertRaisesRegex(OSError, "disk full"):
                 sync.cmd_update(self.repo, set(), True, "unused")
-        self.assertEqual(sync.local_files(self.repo / "demo"), old)
+        self.assertEqual(sync.local_files(self.repo / "skills" / "demo"), old)
         self.assertEqual((self.repo / "skills.json").read_bytes(), before)
 
     def test_completed_component_pin_survives_later_fetch_failure(self):
@@ -422,8 +427,8 @@ class ComponentFlowTests(unittest.TestCase):
                 sync.cmd_update(self.repo, set(), True, "unused")
         entries = self.metadata()["skills"]
         self.assertEqual([e["upstream"]["version"] for e in entries], ["v2", "v1"])
-        self.assertEqual((self.repo / "alpha/notes.md").read_bytes(), b"v2\n")
-        self.assertEqual((self.repo / "beta/notes.md").read_bytes(), b"v1\n")
+        self.assertEqual((self.repo / "skills" / "alpha/notes.md").read_bytes(), b"v2\n")
+        self.assertEqual((self.repo / "skills" / "beta/notes.md").read_bytes(), b"v1\n")
 
     def test_pin_only_update_persisted_before_later_failure(self):
         self.import_package(name="alpha")
@@ -446,7 +451,7 @@ class ComponentFlowTests(unittest.TestCase):
         self.import_package()
         old = self.fixture("skill")
         after = dict(old, **{"notes.md": b"v2\n"})
-        (self.repo / "demo/notes.md").write_bytes(b"v2\n")
+        (self.repo / "skills" / "demo/notes.md").write_bytes(b"v2\n")
         with patch.object(sync, "fetch", side_effect=[(old, "v1"), (after, "v2")]):
             self.assertEqual(sync.cmd_check(self.repo, set(), "unused"), 1)
 
@@ -481,13 +486,13 @@ class ComponentFlowTests(unittest.TestCase):
                     patch.object(sync, "fetch", return_value=(files, "v1")):
                 with self.assertRaisesRegex(RuntimeError, "unsafe"):
                     sync.cmd_import(self.repo, "demo", "npm:test", None, [], "test", "unused")
-            self.assertFalse((self.repo / "demo").exists())
+            self.assertFalse((self.repo / "skills" / "demo").exists())
 
     def test_local_symlink_rejected_before_update(self):
         self.import_package()
         outside = self.repo / "outside"
         outside.write_bytes(b"untouched")
-        (self.repo / "demo/link").symlink_to(outside)
+        (self.repo / "skills" / "demo/link").symlink_to(outside)
         with patch.object(sync, "fetch", return_value=(self.fixture("skill"), "v1")):
             with self.assertRaisesRegex(RuntimeError, "symlink"):
                 sync.cmd_update(self.repo, set(), True, "unused")

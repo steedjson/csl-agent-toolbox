@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`csl-agent-toolbox` is a personal source collection for Agent Skills, MCP packages, and native agent plugins. Keep original and third-party components together, distinguished by provenance metadata. Each top-level directory containing `SKILL.md` is one distributable skill.
+`csl-agent-toolbox` is a personal source collection for Agent Skills, MCP packages, and native agent plugins. Keep original and third-party components together, distinguished by provenance metadata. Each directory under `skills/` containing `SKILL.md` is one distributable skill.
 
 ## Source Of Truth
 
@@ -18,14 +18,14 @@ This repository is the single source for every skill and plugin. Host skill dire
 ## Structure
 
 - `skills.json`: sole component catalog (`skills`, `plugins`, `mcps`); filename remains for compatibility.
-- `<skill-name>/SKILL.md`: required skill definition.
-- `<skill-name>/references/`, `scripts/`, `assets/`: optional skill resources.
+- `skills/<skill-name>/SKILL.md`: required skill definition.
+- `skills/<skill-name>/references/`, `scripts/`, `assets/`: optional skill resources.
 - `plugins/<plugin-name>/`: host-native plugin packages; manifest determines compatibility.
 - `mcp/<name>/mcp.json`: one portable MCP server configuration package.
 - `.agents/plugins/marketplace.json`: repository plugin marketplace catalog; local plugin paths resolve relative to repository root.
 - `skills.json` `category`: discovery and classification metadata only, never a path resolver.
 - `README.md`: public skill list and usage overview.
-- `codexradar-model-advisor/`: current OpenAI Codex model-advice skill.
+- `skills/codexradar-model-advisor/`: current OpenAI Codex model-advice skill.
 
 Entry point: `python3 scripts/toolbox.py` (`list`, `hosts`, `status`, `install`, `uninstall`, `import`, `check`, `update`). Reuse `scripts/install_skills.py` for Skill links and `scripts/sync_upstream.py` for three-way upstream merges. Offline tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`. Do not document commands that do not exist.
 
@@ -52,7 +52,7 @@ Follow portable Agent Skills layout.
 - `README.md`: optional. Do not create auxiliary docs solely to satisfy installer.
 - Add reusable scripts only when deterministic execution or meaningful reuse warrants them. Test every added script.
 - Register every shipped skill in `skills.json`; keep `files` list accurate and remove entries for absent skill directories.
-- Keep standalone Skill packages flat at repository root; category metadata in `skills.json` does not control paths.
+- Keep standalone Skill packages flat under the repository’s `skills/` directory; category metadata in `skills.json` does not control paths.
 - Update root `README.md` when public skill list or install commands change.
 - Preserve source skill behavior during migrations. Do not restore files removed by later source revisions.
 

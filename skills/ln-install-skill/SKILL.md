@@ -11,8 +11,8 @@ This skill **only ever touches symlinks**. It never deletes, moves, or edits the
 
 ## Defaults (override per request)
 
-- **Source directory** `SRC` = the `csl-agent-toolbox` repository root — the canonical source of truth for every skill and plugin.
-  - Resolve it in order: path the user names → the current repo if its root contains `skills.json` → `~/BDSYNC/self/AI/tools/csl-agent-toolbox`.
+- **Source directory** `SRC` = the `skills/` directory inside the `csl-agent-toolbox` repository — the canonical source of truth for every skill and plugin.
+  - Resolve it in order: path the user names → `<current-repo>/skills` if its root contains `skills.json` → `~/BDSYNC/self/AI/tools/csl-agent-toolbox/skills`. When given a repository root containing `skills.json`, use its `skills/` child as `SRC`; for an arbitrary external skill collection, use the given source directory directly. Keep `REPO_ROOT` separate for repository CLI commands.
   - `~/.cc-switch/skills` is **not** a source any more. It is only a legacy copy location; if the user points there, say so and offer the repository instead.
   - Never treat a host directory (`~/.claude/skills`, `~/.codex/skills`) as a source.
 - **Target directory** `DST` = the destination host's skills directory. The user must name the agent ("装到 codex" / "install to claude"). Never pick a host on your own; if the request has no target, ask which agent before doing anything.
@@ -35,8 +35,8 @@ Trigger phrases: "ln install skill", "软链装 skill", "把 skill 链接到 dsh
 
 ## Actions
 
-When `SRC` is this repository and the destination is a named user-level host, use
-`python3 "$SRC/scripts/toolbox.py" install --skill <name> --host <host>` (or `uninstall`).
+When `SRC` is this repository’s `skills/` directory and the destination is a named user-level host, use
+`python3 "$REPO_ROOT/scripts/toolbox.py" install --skill <name> --host <host>` (or `uninstall`).
 Repeat `--skill` and `--host` for an explicit multi-selection; use `--dry-run` for preview.
 This preserves dependency installation and host-directory overrides. `--host agents`
 is only for an explicitly requested shared user-level destination. The steps below

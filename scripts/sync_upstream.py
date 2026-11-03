@@ -61,7 +61,7 @@ from pathlib import Path
 NPM_REGISTRY = "https://registry.npmjs.org"
 DEFAULT_GIT_BASE = "https://github.com"
 SKIP_NAMES = {".DS_Store", "__pycache__"}
-COMPONENTS = {"skill": ("skills", ""), "plugin": ("plugins", "plugins"), "mcp": ("mcps", "mcp")}
+COMPONENTS = {"skill": ("skills", "skills"), "plugin": ("plugins", "plugins"), "mcp": ("mcps", "mcp")}
 
 
 def safe_relative(value, allow_root=False):

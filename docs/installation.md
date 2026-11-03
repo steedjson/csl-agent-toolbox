@@ -1,6 +1,6 @@
 # 安装、更新与宿主适配
 
-`csl-agent-toolbox` 保存源码；宿主安装是显式动作。`skills.json` 的 `skills`、`plugins`、`mcps` 是唯一组件目录。自研组件直接修改；第三方组件保留 `upstream` 和三方合并基线；改编材料用 `source_note` 记录来源。
+`csl-agent-toolbox` 保存源码：Skill 位于 `skills/<name>/`，宿主软链接指向该目录；宿主安装是显式动作。`skills.json` 的 `skills`、`plugins`、`mcps` 是唯一组件目录。自研组件直接修改；第三方组件保留 `upstream` 和三方合并基线；改编材料用 `source_note` 记录来源。
 
 ## 选择组件和目标
 

@@ -20,8 +20,8 @@ class ToolboxTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.repo = self.root / "repo"
         self.repo.mkdir()
-        (self.repo / "demo").mkdir()
-        (self.repo / "demo/SKILL.md").write_text("---\nname: demo\ndescription: demo\n---\n")
+        (self.repo / "skills" / "demo").mkdir(parents=True)
+        (self.repo / "skills/demo/SKILL.md").write_text("---\nname: demo\ndescription: demo\n---\n")
         self.mcp = self.repo / "mcp/echo-server"
         self.mcp.mkdir(parents=True)
         self.server = {"type": "stdio", "command": "echo", "args": ["hello"]}
@@ -197,10 +197,10 @@ class ToolboxTests(unittest.TestCase):
         args = ["--skill", "demo", "--host", "zcode"]
         self.assertEqual(toolbox.main(["install", *args]), 0)
         link = self.root / "zcode-skills/demo"
-        self.assertEqual(link.resolve(), (self.repo / "demo").resolve())
+        self.assertEqual(link.resolve(), (self.repo / "skills" / "demo").resolve())
         self.assertEqual(toolbox.main(["uninstall", *args]), 0)
         self.assertFalse(link.exists())
-        self.assertTrue((self.repo / "demo/SKILL.md").exists())
+        self.assertTrue((self.repo / "skills/demo/SKILL.md").exists())
 
     def test_zcode_stdio_merge_duplicate_and_remove(self):
         path = toolbox.zcode_config_path()

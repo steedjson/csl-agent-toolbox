@@ -6,3 +6,5 @@ __pycache__/
 .claude/
 .codebuddy/
 .lh-harness/
+.dao/
+node_modules/

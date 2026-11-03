@@ -21,8 +21,8 @@ class InstallTests(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp(prefix="install-test-"))
         self.repo = self.tmp / "repo"
         for name in ("alpha", "beta"):
-            (self.repo / name).mkdir(parents=True)
-            (self.repo / name / "SKILL.md").write_text(
+            (self.repo / "skills" / name).mkdir(parents=True)
+            (self.repo / "skills" / name / "SKILL.md").write_text(
                 f"---\nname: {name}\ndescription: {name}\n---\nbody\n", encoding="utf-8")
         (self.repo / "README.md").write_text("not a skill\n", encoding="utf-8")
         (self.repo / "skills.json").write_text(
@@ -46,10 +46,28 @@ class InstallTests(unittest.TestCase):
     def test_repo_skills_ignores_non_skill_dirs(self):
         self.assertEqual(sorted(inst.repo_skills()), ["alpha", "beta"])
 
+    def test_skill_discovery_uses_only_skills_directory(self):
+        (self.repo / "legacy").mkdir()
+        (self.repo / "legacy/SKILL.md").write_text("legacy skill\n")
+        (self.repo / "skills/not-a-skill").mkdir()
+        self.assertEqual(sorted(inst.repo_skills()), ["alpha", "beta"])
+
+    def test_source_directory_mount_cannot_be_written(self):
+        for source in (self.repo, self.repo / "skills"):
+            with self.subTest(source=source):
+                direct = self.tmp / "direct-mount"
+                direct.symlink_to(source)
+                try:
+                    with mock.patch.object(inst, "HOSTS", {"direct": str(direct)}):
+                        self.assertEqual(inst.cmd_link(["direct"], ["alpha"], True, False), 2)
+                    self.assertFalse((self.repo / "skills/alpha").is_symlink())
+                finally:
+                    direct.unlink()
+
     def test_link_creates_symlinks_to_repo(self):
         self.assertEqual(self.run_cmd("link"), 0)
         self.assertTrue((self.host / "alpha").is_symlink())
-        self.assertTrue(inst.same_path(self.host / "alpha", self.repo / "alpha"))
+        self.assertTrue(inst.same_path(self.host / "alpha", self.repo / "skills" / "alpha"))
 
     def test_link_is_idempotent(self):
         self.run_cmd("link")
@@ -68,7 +86,7 @@ class InstallTests(unittest.TestCase):
         elsewhere.mkdir(parents=True)
         (self.host / "alpha").symlink_to(elsewhere)
         self.run_cmd("link", "--prune")
-        self.assertTrue(inst.same_path(self.host / "alpha", self.repo / "alpha"))
+        self.assertTrue(inst.same_path(self.host / "alpha", self.repo / "skills" / "alpha"))
 
     def test_real_directory_is_never_replaced(self):
         (self.host / "alpha").mkdir()
@@ -93,7 +111,7 @@ class InstallTests(unittest.TestCase):
         self.run_cmd("link")
         self.run_cmd("unlink", "--skill", "alpha")
         self.assertFalse((self.host / "alpha").exists())
-        self.assertTrue((self.repo / "alpha" / "SKILL.md").exists())
+        self.assertTrue((self.repo / "skills" / "alpha" / "SKILL.md").exists())
 
     def test_unlink_requires_skill(self):
         self.assertEqual(self.run_cmd("unlink"), 2)
@@ -112,7 +130,7 @@ class InstallTests(unittest.TestCase):
     def test_status_detects_whole_directory_direct_connection(self):
         direct = self.tmp / "direct" / "skills"
         direct.parent.mkdir(parents=True)
-        direct.symlink_to(self.repo)
+        direct.symlink_to(self.repo / "skills")
         with mock.patch.object(inst, "HOSTS", {"direct": str(direct)}):
             with mock.patch.object(sys, "argv", ["install_skills.py", "status"]):
                 self.assertEqual(inst.main(), 0)

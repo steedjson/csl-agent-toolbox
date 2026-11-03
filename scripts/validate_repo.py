@@ -49,7 +49,7 @@ def check_skills(repo):
         if not name:
             errors.append("skill entry missing 'name'")
             continue
-        sdir = repo / name
+        sdir = component_dir(repo, name)
         if not sdir.is_dir():
             errors.append(f"skill dir missing: {name}/")
             continue
@@ -148,7 +148,7 @@ def check_paths(repo):
 
 def check_skill_contracts(repo):
     errors = []
-    for script in sorted(repo.glob("*/scripts/validate_contract.py")):
+    for script in sorted(repo.glob("skills/*/scripts/validate_contract.py")):
         result = subprocess.run(
             [sys.executable, str(script)],
             cwd=repo,
