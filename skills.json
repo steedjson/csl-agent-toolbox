@@ -61,6 +61,17 @@
       ]
     },
     {
+      "name": "csl-jenkins-deploy-scaffold",
+      "category": "framework-workflows",
+      "description": "根据项目构建、运行、发布与持久化证据选择 Jenkins/Docker/Compose/Kubernetes 部署方案；核心自包含，关键缺项再问，按需生成并分层验证",
+      "files": [
+        "SKILL.md",
+        "references/topology-split.md",
+        "references/pitfalls.md",
+        "references/acceptance-cases.md"
+      ]
+    },
+    {
       "name": "django-development",
       "category": "framework-workflows",
       "description": "Discovery-first Django backend workflow for native Django, DRF, and Ninja projects",
@@ -915,6 +926,7 @@
         "license": "Apache-2.0"
       },
       "source_note": "Packaging additions 2026-11-03: LICENSE and NOTICE.md match the upstream repository root at the pinned commit (Git blobs bb3f6d23b1f8025514a62a12b51b47d73e3c9aa9 and 0468271c904ae334cfaf27da6f8df3d5f419a1f0). Added the bundled modern-screenshot MIT license from qq15725/modern-screenshot LICENSE blob c83888272c1ec834dc656067a5ab9e8af12b82fb; exact bundled library version was not independently established. Replaced the truncated catalog description with a complete concise description. Original skill frontmatter and vendored implementation bytes remain unchanged."
+
     }
   ],
   "plugins": [
@@ -1319,6 +1331,7 @@
         "license": "MIT"
       },
       "source_note": "Local packaging additions 2026-11-03: the repository-root MIT LICENSE matches pinned upstream Git blob 5df102e8a2e29cdfb881ae7ec5040f2766564680. Added package/LICENSE from the integrity-verified tree-sitter-dart@1.0.0 npm tarball (sha512-Ve5YMPJjjGW9LEsO+MngAOibQsw5obFp+bUT41pvwdcXWRwJImOWs3eaPi6AubEiBmc09qvhdvxeIXvxlhMnug==); npm metadata says ISC but the actual bundled license text grants MIT terms. The local Codex manifest is a discovery adapter only: Codex command discovery, multi-agent execution and Claude-specific PostToolUse hooks have not been runtime verified."
+
     }
   ],
   "mcps": []

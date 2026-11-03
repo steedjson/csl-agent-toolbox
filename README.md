@@ -76,6 +76,12 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 按个人 Django 项目基线（提炼自 wework/backend + stdkit v1.2.6 源码快照）一次性初始化新后端项目：确定性渲染熟悉的 `apps/ + common/ + 配置包` 目录结构、View/Service/JWT 认证中间件通用基建、uuid 主键 + 软删除模型基座、内嵌 `stdkit/` 私有基础库（传递依赖固化在 requirements，不入库）、`make check/verify` 质量门禁、docs 与 AGENTS.md 骨架，并按需生成业务 app 骨架。只管新项目初始化；存量项目扫描走 `/csl-init-project`。
 
+#### [csl-jenkins-deploy-scaffold](./skills/csl-jenkins-deploy-scaffold/)
+
+项目自适应部署：先发现构建、运行、发布与持久化约束，再选择单镜像、分镜像或多服务结构，按需生成 Jenkins、Docker、Compose、Kubernetes 文件。核心流程只需 `SKILL.md`，不依赖私人样板仓库、固定目录、域名或预设技术栈；缺少会影响方案的信息时给出推荐并提问，保留现有流水线入口，明确静态检查、构建、运行及集群验证的边界。附分镜像示例、故障诊断与 12 个合成验收案例。
+
+首次使用：`分析当前项目，推荐改动最小的 Jenkins 和容器部署方案；能从代码确认的先查，关键缺项再问，确认事实后生成必要文件。`
+
 ### 代码质量（code-quality）
 
 #### [thermo-nuclear-code-quality-review](./skills/thermo-nuclear-code-quality-review/)

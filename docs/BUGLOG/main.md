@@ -2,6 +2,13 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-11-03][csl-jenkins-deploy-scaffold] 将私人部署经验泛化为固定契约导致不可迁移与选型冲突
+- 现象: 技能要求访问私人项目/运维目录并使用固定域名、镜像库;history 路由被强制分镜像;正文要求 env 而 split 参考允许后端缺 env;启动默认 schema push 和演示数据导入
+- 根因: 把单次上线的文件布局、基础设施和修复措施当作所有项目的前提,缺少事实发现、方案比较、关键缺项提问及动作授权边界
+- 修法: 核心流程改为自包含的发现→选型→补问→增量生成→分层验证;移除私人路径与危险默认值;统一旧 Jenkins 入口兼容,将迁移/种子和发布单独控制;重写参考并补 12 个合成验收案例
+- 关联: skills/csl-jenkins-deploy-scaffold/SKILL.md、references/topology-split.md、references/pitfalls.md、references/acceptance-cases.md
+- 教训: 通用部署技能应复用决策与验证方法,不能复用未经确认的项目事实、权限或生产数据动作
+
 ## [2026-10-24][ui-design-system] 上游文档命令不可执行且 SCSS 导出缺少实现
 - 现象: 按 SKILL.md 的位置参数示例执行时退出码为 2;使用 --format scss 时抛出 AttributeError
 - 根因: CLI 已改为 --style / --format,文档仍使用位置参数;export_tokens 调用未实现的 _export_as_scss
