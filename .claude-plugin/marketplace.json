@@ -1,0 +1,14 @@
+{
+  "name": "vlong-skills-local",
+  "owner": {
+    "name": "changsailong"
+  },
+  "plugins": [
+    {
+      "name": "understand-anything",
+      "source": "./plugins/understand-anything",
+      "description": "AI-powered codebase understanding — analyze, visualize, and explain any project",
+      "category": "Productivity"
+    }
+  ]
+}

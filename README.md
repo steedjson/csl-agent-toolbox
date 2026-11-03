@@ -218,6 +218,10 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 完整安装 / 使用 / 验证 / 卸载说明见 [`plugins/openwolf-codegraph-bridge/README.md`](./plugins/openwolf-codegraph-bridge/README.md)。
 
+### [understand-anything](./plugins/understand-anything/)
+
+代码库知识图谱插件：多 agent 管线（10 个 agent）把任意项目转成可交互仪表盘——结构图（文件/函数/依赖节点）、业务域视图、依赖序 guided tours、diff 影响分析，另含 `/understand-knowledge` 可把 Karpathy 式 LLM wiki 解析成知识图谱。`/understand` 等主命令随插件分发，首次运行时自建 `packages/core`（需 Node ≥ 22 + pnpm ≥ 10）；整体目录原样同步，与上游 install.sh 的整目录 symlink 分发一致。上游为 [Egonex-AI/Understand-Anything](https://github.com/Egonex-AI/Understand-Anything) 的 `understand-anything-plugin` 子目录（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；已登记 `.agents/plugins/marketplace.json`（Codex）与 `.claude-plugin/marketplace.json`（Claude）。本地适配：补齐固定版本根目录 MIT 许可与 Dart grammar 许可；上游只带 `.claude-plugin/plugin.json`，新增 `.codex-plugin/plugin.json` 仅用于目录登记与发现适配。Codex 命令发现、多 agent 执行及 hook 激活均未实测，不能据此宣称完整兼容。内含使用 Claude 事件和环境变量的 post-tool-use auto-update hook，安装到 Claude 后需显式信任；该 hook 未适配或验证为 Codex 原生 hook。与 CodeGraph 互补而非替代：CodeGraph 管 agent 检索（符号引用/调用路径/影响面），本插件产出人读的可视化导览仪表盘。
+
 ---
 
 ## 安装

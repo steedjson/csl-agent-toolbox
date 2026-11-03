@@ -1,0 +1,22 @@
+{
+  "name": "understand-anything",
+  "version": "2.9.8",
+  "description": "AI-powered codebase understanding — analyze, visualize, and explain any project",
+  "author": {
+    "name": "Egonex"
+  },
+  "interface": {
+    "displayName": "Understand Anything",
+    "shortDescription": "Turn any codebase into an interactive knowledge graph dashboard.",
+    "longDescription": "Catalog adapter for the vendored Understand Anything plugin. Upstream targets Claude Code and includes graph-analysis skills and an interactive dashboard. Codex runtime behavior, agent orchestration, and command discovery have not been verified; the Claude PostToolUse hook is not a verified Codex hook. This manifest records package discovery only and does not certify feature parity.",
+    "developerName": "Egonex",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Run /understand on this repository."
+    ]
+  }
+}
