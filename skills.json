@@ -797,6 +797,23 @@
       ]
     },
     {
+      "name": "invoice-organizer",
+      "category": "productivity",
+      "description": "Automatically organizes invoices and receipts for tax preparation by reading messy PDF, image, and document files, extracting vendor, invoice number, date, and amount, renaming files to a standard format, and sorting them into logical folders by vendor, expense category, time period, or tax category. Use when preparing tax records, tidying receipt folders, reconciling expenses, or setting up ongoing bookkeeping.",
+      "files": [
+        "SKILL.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "ranbot-ai/awesome-skills",
+        "path": "skills/awesome-llm-invoice-organizer",
+        "ref": "28a447831e7302b40ac780b33fe8c516004e169d",
+        "branch": "main",
+        "synced_at": "2026-10-31",
+        "license": "UNVERIFIED"
+      }
+    },
+    {
       "name": "wechat-article-reader",
       "category": "productivity",
       "description": "当用户发来微信公众号公开单篇文章链接（mp.weixin.qq.com），要求读取、总结、翻译或保存正文、标题、作者、公众号名及发布时间时使用。不用于视频号、关键词搜索或整号批量导出。",

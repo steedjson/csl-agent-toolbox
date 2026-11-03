@@ -196,6 +196,10 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 `grill-me` 是 `/grill-me` 的显式入口（`disable-model-invocation: true`），正文只转调 `grilling`；`grilling` 才是实际工作流：把计划或决策展开成设计树，按轮次追问整个 frontier，每问附带推荐答案，直到双方理解一致。两者上游均为 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）；`grill-me` 在 `skills.json` 里以 `depends_on: ["grilling"]` 声明依赖，只装前者不会工作。
 
+#### [invoice-organizer](./skills/invoice-organizer/)
+
+把混乱目录里的发票与收据（PDF、扫描件、截图）整理成报税就绪的归档：逐个文件提取供应商、日期、金额等信息，按 `YYYY-MM-DD Vendor - Invoice - 描述.ext` 规范重命名，再按供应商/费用类别/时间段/税务类别归类，动文件前先展示整理方案。上游为 [ranbot-ai/awesome-skills](https://github.com/ranbot-ai/awesome-skills/tree/main/skills/awesome-llm-invoice-organizer)（衍生自 Prat011/awesome-llm-skills）；上游无 license 声明，`skills.json` 记为 `UNVERIFIED`，vendored 时修复了上游截断的结尾与损坏的代码围栏。
+
 #### [wechat-article-reader](./skills/wechat-article-reader/)
 
 读取微信公众号公开单篇文章，提取正文、标题、作者、公众号名与发布时间，按需总结、翻译或保存 Markdown。网页工具失败时使用本地 HTTPS 备用流程，包含请求限时、链接与重定向校验、正文验收及防覆盖保存规则。来源为用户提供的技能包，经本地重写修订；来源记录见 `skills.json` 的 `source_note`。已通过单篇真实文章备用抓取实测，图片与异常分支未验证。
