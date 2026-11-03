@@ -100,6 +100,10 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 ### 浏览器与 UI（browser-and-ui）
 
+#### [csl-frontend-kickoff](./skills/csl-frontend-kickoff/)
+
+前端页面开工编排（采访 → 双方案 → 选择 → 落地 → 验收五拍）：先用 AskUserQuestion 采访任务与视觉偏好，同一真实页面、同一批数据做两个可运行设计方案并说明取舍，用户选定后才落实 Ant Design 组件与主题，最后按双端截图 + 交互实测 + impeccable + csl-vision 门禁验收。是 `frontend-design` / `antd-component-lookup` / `antd-theme-customization` / `browser-use` 的编排入口而非替代。适用于从零新做页面或整体重做；风格已定的小改动可豁免双方案。
+
 #### [csl-xiaopiu-design-draft-capture](./skills/csl-xiaopiu-design-draft-capture/)
 
 把 xiaopiu（小PIU）原型项目导出为本地完整设计稿截图：每页一张 PNG、整画布无接缝（画布平铺一次成像，禁滚动拼接），并产出映射页面树身份的 `manifest.json`（页面 ID 即原型树节点 key，供交互式审查员跳回原型的导航键）。内置虚拟滚动 SPA 的硬约束剧本（点树切页、内联样式压制、兄弟页副本隐藏、视口上限适配）。产物是设计稿走查与 UI 审查子智能体的标准输入；通用网页截图不在范围内。
@@ -112,9 +116,17 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 落地页、作品集与改版的反模板化前端设计方向：先读 brief 推断设计意图，再选设计系统与三个设计旋钮，校准排版/配色/布局，最后过一遍反 AI 套路预检清单。上游为 `tasteskill`（npm `natureco-cli` 内的 `skills/taste-skill`），按 `skills.json` 的 `upstream` 固定版本同步。
 
+#### [html-design-draft](./skills/html-design-draft/)
+
+自包含 HTML 设计稿：海报、界面 mockup、落地页视觉稿、信息图与示意图，每块画板一个双击即看的独立 HTML（零构建、零依赖、除 Google Fonts 外无外链），`index.html` 汇总导航，`assets/` 放图片字体；附确定性校验脚本（自包含性 / 本地资源存在性 / 结构必备项）。方法论改编自 [JimLiu/baocut](https://github.com/JimLiu/baocut) 内置 design 技能（commit 7aa049e8，BaoCut Community License——只参考思想、全文重写，未搬运任何文件），改编记录见 `skills.json` 的 `source_note`。整体方向未定先走 `frontend-design` / `design-taste-frontend`，长期设计系统走 `ui-design-system`，开发真实前端项目不用本技能。
+
 #### [frontend-design](./skills/frontend-design/)
 
 Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规划颜色、字体与布局，再实现并自查，覆盖响应式、可访问性、动效和界面文案。原入口为 [claude-code 的 frontend-design 插件](https://github.com/anthropics/claude-code/tree/main/plugins/frontend-design)；导入时确认技能正文与官方 [anthropics/skills](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 版本逐字节一致，使用后者完整携带的 `LICENSE.txt`（Apache-2.0），按 `skills.json` 的 `upstream` 固定 commit 同步。
+
+#### [impeccable](./skills/impeccable/)
+
+编码 agent 的设计词汇表与 AI slop 检测：24 个子命令分四组——Steer（`bolder`/`quieter`/`distill` 等调整方向）、Review（`critique` 打分 UX 评审 / `audit` P0-P3 技术审计）、Finish（`polish`/`harden`/`optimize` 等收尾）、Iterate（`live` 浏览器内选元素换变体回写源码）。自带 62 条确定性检测规则的引擎启动器（首次运行下载二进制到 `~/.impeccable/bin/`，无需 Node）。上游为 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 `.claude/skills/impeccable` 构建（Apache-2.0），按 `skills.json` 的 `upstream` 固定 commit 同步。随包保留固定版本根目录的 `LICENSE`、`NOTICE.md`，并附带 modern-screenshot 的 MIT 许可。本仓库只 vendor 技能本体；各工具的 design hook 与浏览器扩展不随行，需要时用 `npx impeccable install`。与 `frontend-design` 同源且为其超集演化版：定方向先走 `frontend-design`，迭代与评审走本技能。
 
 #### [creative-direction](./skills/creative-direction/)
 

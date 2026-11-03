@@ -258,6 +258,20 @@
       }
     },
     {
+      "name": "html-design-draft",
+      "category": "browser-and-ui",
+      "description": "Produce viewable design drafts as self-contained HTML: posters, mockups, landing-page visuals, infographics and diagrams written as standalone board files with an index page - zero build, open in any browser. Ships a deterministic checker for self-containment, local assets and structural must-haves.",
+      "files": [
+        "SKILL.md",
+        "references/craft.md",
+        "references/color.md",
+        "references/typography.md",
+        "references/questions.md",
+        "scripts/check_design.py"
+      ],
+      "source_note": "Adapted 2026-10-25 from BaoCut's built-in design and design-system skills at commit 7aa049e82e1367da013b7aba80f0b79033fa04ad (github.com/JimLiu/baocut, BaoCut Community License 1.0): the file-based-draft methodology, board skeleton rules, design discipline and ask-first questions were referenced; all text is a fresh Chinese rewrite targeting self-contained HTML with no BaoCut runtime dependency, the checker script is original, and no BaoCut files are vendored. Treated as a local skill, not a vendored third-party skill."
+    },
+    {
       "name": "frontend-ui-ux-design",
       "category": "browser-and-ui",
       "description": "Frontend UI/UX engineering discipline for React/shadcn-ui and Vue/shadcn-vue: two-pass design contract (six semantic color tokens, layout skeleton, component mapping), 60-30-10 color discipline, 8pt spacing grid, 4-state usability baseline, and anti-AI-slop audit; backs the csl pipeline frontend gate",
@@ -775,6 +789,14 @@
       }
     },
     {
+      "name": "csl-frontend-kickoff",
+      "description": "前端页面开工编排：先采访用户（任务 + 视觉偏好），同一真实页面、同一批数据做两个可运行设计方案并说明取舍，用户选定后才落实 Ant Design 组件与主题，最后以双端截图 + 交互实测验收。适用于从零新做页面或整体重做，小改动可豁免双方案。",
+      "category": "browser-and-ui",
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
       "name": "wechat-article-reader",
       "category": "productivity",
       "description": "当用户发来微信公众号公开单篇文章链接（mp.weixin.qq.com），要求读取、总结、翻译或保存正文、标题、作者、公众号名及发布时间时使用。不用于视频号、关键词搜索或整号批量导出。",
@@ -782,6 +804,83 @@
         "SKILL.md"
       ],
       "source_note": "Adapted 2026-11-01 from user-supplied wechat-article-reader.zip (SHA-256 60584ea972ddc6d862a8a17c953bbd2ed63f5751e176fa22be42698cd51e17e7); original author, upstream repository and license were not provided. Locally rewritten workflow adds portable tool selection, bounded requests, URL/redirect validation, article-content acceptance, metadata handling and safe optional saving, and removes unverified service/vulnerability assertions. Single-article local HTTPS fallback and metadata extraction were exercised on 2026-11-01; other branches remain unverified. This is an unpinnable attachment adaptation, not an upstream sync contract."
+    },
+    {
+      "name": "impeccable",
+      "category": "browser-and-ui",
+      "description": "Design, redesign, critique, audit, polish, simplify, harden, animate, and improve web interfaces, product components, dashboards, forms, onboarding, and native iOS or Android screens",
+      "files": [
+        "LICENSE",
+        "NOTICE.md",
+        "SKILL.md",
+        "reference/adapt.md",
+        "reference/adapt.native.md",
+        "reference/android.md",
+        "reference/animate.md",
+        "reference/audit.md",
+        "reference/audit.native.md",
+        "reference/bolder.md",
+        "reference/clarify.md",
+        "reference/colorize.md",
+        "reference/component-review.md",
+        "reference/craft-floor.md",
+        "reference/craft.md",
+        "reference/critique.md",
+        "reference/degraded/asset-producer.md",
+        "reference/degraded/documenter.md",
+        "reference/degraded/finish-reviewer.md",
+        "reference/degraded/manual-edit-applier.md",
+        "reference/delight.md",
+        "reference/distill.md",
+        "reference/doctor.md",
+        "reference/document.md",
+        "reference/extract.md",
+        "reference/generate.md",
+        "reference/harden.md",
+        "reference/hooks.md",
+        "reference/init.md",
+        "reference/ios.md",
+        "reference/layout.md",
+        "reference/live-setup.md",
+        "reference/live.md",
+        "reference/mode-operate.md",
+        "reference/mode-persuade.md",
+        "reference/mode-read.md",
+        "reference/new-work.md",
+        "reference/onboard.md",
+        "reference/operate.md",
+        "reference/optimize.md",
+        "reference/overdrive.md",
+        "reference/polish.md",
+        "reference/quieter.md",
+        "reference/region-map.md",
+        "reference/routing.md",
+        "reference/shape.md",
+        "reference/typeset.md",
+        "reference/visualize.md",
+        "scripts/VERSION",
+        "scripts/command-metadata.json",
+        "scripts/data/font-index-failures.json",
+        "scripts/data/font-index.json",
+        "scripts/engine-checksums.txt",
+        "scripts/impeccable",
+        "scripts/impeccable.cmd",
+        "scripts/live-browser-dom.js",
+        "scripts/live-browser-ignores.js",
+        "scripts/live-browser-session.js",
+        "scripts/live-browser.js",
+        "scripts/modern-screenshot.LICENSE",
+        "scripts/modern-screenshot.umd.js"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "pbakaus/impeccable",
+        "path": ".claude/skills/impeccable",
+        "ref": "24aa2547f1d80e8d0edd767d9b76bc0bb65a3b6b",
+        "synced_at": "2026-11-03",
+        "license": "Apache-2.0"
+      },
+      "source_note": "Packaging additions 2026-11-03: LICENSE and NOTICE.md match the upstream repository root at the pinned commit (Git blobs bb3f6d23b1f8025514a62a12b51b47d73e3c9aa9 and 0468271c904ae334cfaf27da6f8df3d5f419a1f0). Added the bundled modern-screenshot MIT license from qq15725/modern-screenshot LICENSE blob c83888272c1ec834dc656067a5ab9e8af12b82fb; exact bundled library version was not independently established. Replaced the truncated catalog description with a complete concise description. Original skill frontmatter and vendored implementation bytes remain unchanged."
     }
   ],
   "plugins": [
