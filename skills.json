@@ -823,6 +823,23 @@
       "source_note": "Adapted 2026-11-01 from user-supplied wechat-article-reader.zip (SHA-256 60584ea972ddc6d862a8a17c953bbd2ed63f5751e176fa22be42698cd51e17e7); original author, upstream repository and license were not provided. Locally rewritten workflow adds portable tool selection, bounded requests, URL/redirect validation, article-content acceptance, metadata handling and safe optional saving, and removes unverified service/vulnerability assertions. Single-article local HTTPS fallback and metadata extraction were exercised on 2026-11-01; other branches remain unverified. This is an unpinnable attachment adaptation, not an upstream sync contract."
     },
     {
+      "name": "wechat-channels-reader",
+      "category": "productivity",
+      "description": "当用户发来微信视频号公开单篇分享链接（weixin.qq.com/sph/...）或分享文案，要求读取、总结、转文字或存档视频内容时使用。不用于私密内容、直播、整号批量抓取；图集支持有限。",
+      "files": [
+        "SKILL.md",
+        "scripts/README.md",
+        "scripts/setup.sh",
+        "scripts/sph_fetch.py",
+        "scripts/yuanbao_login.py",
+        "tests/test_browser_fixtures.py",
+        "tests/test_models.py",
+        "tests/test_resolvers.py",
+        "tests/test_sph_fetch.py"
+      ],
+      "source_note": "Adapted 2026-11-01 from user-supplied wechat-channels-reader.zip (frozen input SHA-256 b353ab5009158d468d98a3308da6ce33cac444e8748cdd602077e63ca9e0f1e9); author, pinnable upstream and license were not supplied. Imported fixed-v3 package byte-for-byte (SHA-256 62ef0a5b6654c3297e9d19209d5d3857f2e500cf010db291bc27f849cb16e96d). Local adaptations preserve model sources/FunASR while adding explicit per-service consent, private credentials, safe output/download/redirect handling, resolver budgets and retries, robust error parsing and verified model cache/resume controls. 81 offline regressions and local media integration passed. Live test 2026-11-01 obtained a 25.3-second video through paste2vid after ffmpegtool HTTP 403/ip_blacklisted; tiny ASR completed with obvious transcription errors, and four frames were extracted. Yuanbao and FunASR live compatibility remain unverified. This attachment adaptation has no upstream sync contract."
+    },
+    {
       "name": "impeccable",
       "category": "browser-and-ui",
       "description": "Design, redesign, critique, audit, polish, simplify, harden, animate, and improve web interfaces, product components, dashboards, forms, onboarding, and native iOS or Android screens",

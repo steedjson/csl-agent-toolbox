@@ -204,6 +204,10 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 读取微信公众号公开单篇文章，提取正文、标题、作者、公众号名与发布时间，按需总结、翻译或保存 Markdown。网页工具失败时使用本地 HTTPS 备用流程，包含请求限时、链接与重定向校验、正文验收及防覆盖保存规则。来源为用户提供的技能包，经本地重写修订；来源记录见 `skills.json` 的 `source_note`。已通过单篇真实文章备用抓取实测，图片与异常分支未验证。
 
+#### [wechat-channels-reader](./skills/wechat-channels-reader/)
+
+读取微信视频号公开单篇分享链接，保存视频、元数据、带时间戳转写与抽帧。支持 ffmpegtool、paste2vid 及显式选用登录态的元宝路线；各服务需单独允许，包含解析预算、下载边界、模型校验及失败状态。来源为用户附件的本地修订版，记录见 `skills.json` 的 `source_note`。已通过 81 项离线回归；单条真实视频经 paste2vid 下载、tiny 转写与抽帧成功，tiny 有明显错字；元宝及 FunASR 线上兼容性未验证。
+
 ## Codex 插件
 
 `plugins/` 存放宿主原生插件包，兼容性由插件 manifest 决定。插件登记在 `skills.json` 的 `plugins` 数组；`.agents/plugins/marketplace.json` 是供 Codex 发现和安装插件的 marketplace 目录。当前插件包含 hook，安装后需显式信任并验证激活。
