@@ -100,7 +100,9 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 #### [graphify](./skills/graphify/)
 
-把任意代码库连同文档、SQL schema、配置和 PDF 转成可查询知识图谱：本地确定性 AST 解析、每条边可解释、不用向量库，输出交互 HTML、GraphRAG JSON 和 GRAPH_REPORT.md，支持增量 `--update`、跨仓库合并与 query/path/explain 查询。**依赖本机 `graphify` CLI**（上游 [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) 的 `graphify` 包，Apache-2.0），用 `uv tool install graphifyy` 或 `pipx install graphifyy` 安装；仓库只 vendor 了 skill 与各宿主参考文件（上游 `skill.md` 重命名为 `SKILL.md`，已记入 `source_note`），未 vendor Python 实现。
+把任意代码库连同文档、SQL schema、配置和 PDF 转成可查询知识图谱：本地确定性 AST 解析、每条边可解释、不用向量库，输出交互 HTML、GraphRAG JSON 和 GRAPH_REPORT.md，支持增量 `--update`、跨仓库合并与 query/path/explain 查询。**依赖本机 `graphify` CLI**（上游 [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) 的 `graphify` 包，Apache-2.0）。安装本 skill 到任何宿主前先检查 CLI：`graphify --version` 不过（缺失或 shebang 指向已删除解释器）就用 `uv tool install graphifyy` 重装（包名双 y，孤儿 shim 需 `--force` 覆盖）；本机直连 pypi.org 会超时，加 `--index https://pypi.tuna.tsinghua.edu.cn/simple`。仓库只 vendor 了 skill 与各宿主参考文件（上游 `skill.md` 重命名为 `SKILL.md`，已记入 `source_note`），未 vendor Python 实现。
+
+本仓 graphify 集成实践：`graphify-out/` 不进仓（已 gitignore，graph.json 每次全量改写，提交只会制造冲突）；新鲜度靠 `graphify hook install` 装的四个 git hooks（post-commit / post-checkout / post-merge / post-rewrite，切分支后自动增量重建），merge driver 一并注册（若未来改为提交 graph.json，分支合并走集合并集不冲突）；agent 侧常驻规则由 `graphify agents install`（AGENTS.md）与 `graphify claude install`（CLAUDE.md + PreToolUse hook）生成，hook 配置在 `.claude/settings.json`（gitignore 内，本机私有），卸载用对应 `uninstall` 命令。语义抽取后端走 `graphify-sem` wrapper（`~/.config/graphify/openai.env` 定义 OpenAI 兼容端点与模型），未配置时退回 `--code-only` 纯 AST 图（免 key）。
 
 ### 工程规划（engineering-planning）
 

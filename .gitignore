@@ -8,4 +8,5 @@ __pycache__/
 .lh-harness/
 .dao/
 node_modules/
+graphify-out/
 /plugins/understand-anything/packages/core/dist/
