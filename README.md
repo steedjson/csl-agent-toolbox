@@ -58,6 +58,24 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 生成成年虚构角色的偷拍感 COS / 角色摄影图片提示词：公共日常场景、隐蔽机位、长焦或手机抓拍、不完美构图，支持 `n=10` 十种独立构图。
 
+#### Remotion 官方技能族（13 个，vendored 自 [remotion-dev/skills](https://github.com/remotion-dev/skills)，pin `c7cb2fdcacd1`）
+
+用 React 写视频的 Remotion 框架官方 Agent Skills。上游仓库未附带 LICENSE 文件（Remotion 软件本身为源码可用的双轨许可，个人与 ≤3 人公司免费）；按 `sync_upstream.py` 记录为 `UNVERIFIED`，商用分发前请自行确认。
+
+- [remotion-best-practices](./skills/remotion-best-practices/)：总入口 router，不确定用哪个具体技能时先用它。
+- [remotion-create](./skills/remotion-create/)：创建新 Remotion 项目与 composition。
+- [remotion-markup](./skills/remotion-markup/)：React 标记最佳实践（composition、动画、布局、排版、媒体、音频、时序）。
+- [remotion-studio](./skills/remotion-studio/)：启动 Studio 本地预览。
+- [remotion-render](./skills/remotion-render/)：导出视频/静帧（渲染策略与浏览器选择）。
+- [remotion-captions](./skills/remotion-captions/)：字幕转录、显示与动画。
+- [remotion-interactivity](./skills/remotion-interactivity/)：面向 Studio 时间线编辑的标记结构。
+- [remotion-multimedia](./skills/remotion-multimedia/)：Mediabunny 音视频处理。
+- [remotion-maps](./skills/remotion-maps/)：地图动画多种技术路线，按镜头选用。
+- [remotion-docs](./skills/remotion-docs/)：Algolia API 搜索并阅读当前 Remotion 文档。
+- [remotion-license](./skills/remotion-license/)：许可信息、FAQ、条款与购买入口。
+- [remotion-saas](./skills/remotion-saas/)：用 Remotion 构建应用（programmatic video SaaS）。
+- [remotion-upgrade](./skills/remotion-upgrade/)：升级 Remotion 及相关包。
+
 ### 框架工作流（framework-workflows）
 
 #### [yapi-copilot](./skills/yapi-copilot/)
