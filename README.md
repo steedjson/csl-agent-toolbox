@@ -98,6 +98,10 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 用本机已安装的 XERJ 服务检索当前项目的索引源码与文档：从目标项目工作目录调用 `xerj-project` wrapper（Git 根绝对路径哈希为独立索引前缀，自动携带端点与鉴权，不打印密钥），支持 `search` / `def` / `query` / `map` / `watch` 等。每个项目独立索引与日志；安装与升级仅限本机 macOS Apple Silicon，官方发布包经 SHA-256 与 GitHub digest 双重校验后原子替换（上游 [xerj-org/xerj](https://github.com/xerj-org/xerj) 为 Apache-2.0 开源；wrapper 三件套为本机自产，不在上游仓库）。默认词法检索而非语义理解，未命中不等于不存在；与 LSP / codegraph 互补，不替代符号引用检查。
 
+#### [graphify](./skills/graphify/)
+
+把任意代码库连同文档、SQL schema、配置和 PDF 转成可查询知识图谱：本地确定性 AST 解析、每条边可解释、不用向量库，输出交互 HTML、GraphRAG JSON 和 GRAPH_REPORT.md，支持增量 `--update`、跨仓库合并与 query/path/explain 查询。**依赖本机 `graphify` CLI**（上游 [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify) 的 `graphify` 包，Apache-2.0），用 `uv tool install graphifyy` 或 `pipx install graphifyy` 安装；仓库只 vendor 了 skill 与各宿主参考文件（上游 `skill.md` 重命名为 `SKILL.md`，已记入 `source_note`），未 vendor Python 实现。
+
 ### 工程规划（engineering-planning）
 
 #### [dev-effort-estimator](./skills/dev-effort-estimator/)
@@ -227,6 +231,20 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 ### [understand-anything](./plugins/understand-anything/)
 
 代码库知识图谱插件：多 agent 管线（10 个 agent）把任意项目转成可交互仪表盘——结构图（文件/函数/依赖节点）、业务域视图、依赖序 guided tours、diff 影响分析，另含 `/understand-knowledge` 可把 Karpathy 式 LLM wiki 解析成知识图谱。`/understand` 等主命令随插件分发，首次运行时自建 `packages/core`（需 Node ≥ 22 + pnpm ≥ 10）；整体目录原样同步，与上游 install.sh 的整目录 symlink 分发一致。上游为 [Egonex-AI/Understand-Anything](https://github.com/Egonex-AI/Understand-Anything) 的 `understand-anything-plugin` 子目录（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；已登记 `.agents/plugins/marketplace.json`（Codex）与 `.claude-plugin/marketplace.json`（Claude）。本地适配：补齐固定版本根目录 MIT 许可与 Dart grammar 许可；上游只带 `.claude-plugin/plugin.json`，新增 `.codex-plugin/plugin.json` 仅用于目录登记与发现适配。Codex 命令发现、多 agent 执行及 hook 激活均未实测，不能据此宣称完整兼容。内含使用 Claude 事件和环境变量的 post-tool-use auto-update hook，安装到 Claude 后需显式信任；该 hook 未适配或验证为 Codex 原生 hook。与 CodeGraph 互补而非替代：CodeGraph 管 agent 检索（符号引用/调用路径/影响面），本插件产出人读的可视化导览仪表盘。
+
+### [agent-skills](./plugins/agent-skills/)
+
+Addy Osmani 的生产级工程 skills 集合（上游 [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)，MIT，25 个 skill）：spec/TDD/增量实现、代码评审与简化、调试与错误恢复、上下文工程、安全加固、性能优化、CI/CD、发布流程等全软件生命周期纪律。整仓 vendor，含 Claude Code / Codex / Gemini / opencode 多宿主打包；上游 `.opencode/skills` 为 submodule 未收录，`.github` 已排除。已登记本仓库 `.agents/plugins/marketplace.json` 供 Codex 发现。
+
+### [ponytail](./plugins/ponytail/)
+
+让 agent "像屋里最懒的资深开发一样思考"——最少代码、删除优先、克制改动的纪律插件（上游 [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)，MIT）：每会话默认激活，附 `/ponytail` 模式命令族（audit / debt / gain / review / help）与生命周期 hooks，多宿主 manifest（Claude Code、Codex、pi、opencode、Gemini 等）。整仓 vendor 但排除 `assets/`（约 10MB 宣传图）、`benchmarks/`、`tests/`、`.github/` 与各家宿主私有目录。安装到 Codex 后需在 `/hooks` 显式信任其两个生命周期 hook。
+
+## 外部工具记录
+
+以下工具确认可用但不 vendor 进仓库（形状不属于 skill / plugin / MCP，或体积不可行），仅记录来源与安装方式：
+
+- **OmniRoute**（[cheaper-inference/OmniRoute](https://github.com/cheaper-inference/OmniRoute)，MIT）：本地 LLM 网关/路由器，单 OpenAI 兼容端点路由 40+ provider、限额自动 fallback、token 压缩。主网关是 30k+ 文件的独立 Node 应用（`npm install -g omniroute` 或 Docker 镜像 `diegosouzapw/omniroute`），仓库内唯一 agent 侧产物 `@omniroute/opencode-plugin-v2` 是纯 npm 包（无宿主 manifest，`main` 指向未提交的 `dist/`），vendor 进来也不可运行。注意：社区报告过加密可选等安全疑虑；另有同名 `omnilabs-ai/OmniRouter` 流量回放工具，勿混淆。
 
 ---
 
