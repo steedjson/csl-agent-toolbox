@@ -9,6 +9,18 @@
       "source": "./plugins/understand-anything",
       "description": "AI-powered codebase understanding — analyze, visualize, and explain any project",
       "category": "Productivity"
+    },
+    {
+      "name": "agent-skills",
+      "source": "./plugins/agent-skills",
+      "description": "Production-grade engineering skills for AI coding agents covering the full software development lifecycle",
+      "category": "Productivity"
+    },
+    {
+      "name": "ponytail",
+      "source": "./plugins/ponytail",
+      "description": "Makes your AI agent think like the laziest senior dev in the room — minimal code, deletion-first discipline",
+      "category": "Productivity"
     }
   ]
 }
