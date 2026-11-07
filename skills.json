@@ -443,24 +443,23 @@
     {
       "name": "agent-reach",
       "category": "browser-and-ui",
-      "description": "互联网能力路由器：按平台路由到 Exa/OpenCLI/各平台 CLI 与 API，覆盖搜索、社交、招聘、开发、视频、金融与 RSS 共 16 个平台",
+      "description": "只读跨平台内容工具：统一 CLI 搜索、阅读、评论、字幕、行情与职位，支持渠道管理、专用浏览器会话及状态检查",
       "files": [
         "SKILL.md",
-        "references/career.md",
-        "references/dev.md",
-        "references/finance.md",
-        "references/search.md",
-        "references/social.md",
-        "references/video.md",
-        "references/web.md"
+        "references/capabilities.md",
+        "references/maintenance.md",
+        "references/sessions.md"
       ],
       "upstream": {
         "type": "github",
         "repo": "Panniantong/Agent-Reach",
         "path": "agent_reach/skill",
-        "ref": "94f06c1969dfc1834001269d79d3ad0972d9dee6",
+        "ref": "422478ae0264d2236bf7ebd1c3b11a69aaafa4a3",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-07",
+        "exclude": [
+          "SKILL_en.md"
+        ]
       }
     },
     {
