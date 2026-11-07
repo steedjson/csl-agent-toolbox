@@ -102,6 +102,16 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 ### 代码质量（code-quality）
 
+#### [open-code-review](./skills/open-code-review/)
+
+阿里巴巴 [OpenCodeReview](https://github.com/alibaba/open-code-review) 官方 Skill：调用 `ocr review` 审查工作区、分支差异或指定提交，支持 `ocr scan` 全文件扫描、规则匹配和断点续跑。独立模式使用 OCR 自己配置的模型端点与凭据。
+
+#### [open-code-review-delegate](./skills/open-code-review-delegate/)
+
+OpenCodeReview 官方委托模式 Skill：`ocr delegate preview` 选择文件，`ocr delegate rule` 导出适用规则，由当前宿主 Agent 读取上下文、完成审查并输出结果。OCR 侧无需配置模型端点或 API key，推理仍消耗宿主模型额度。
+
+两个 Skill 均依赖 Git ≥ 2.41 和独立安装的 `ocr` CLI（npm 包 `@alibaba-group/open-code-review`）；添加 Skill 不会安装 CLI。使用前检查 `git --version` 与 `ocr --version`，缺失时按 [上游安装说明](https://github.com/alibaba/open-code-review#installation) 安装。按 `skills.json` 固定上游 commit 同步，随包保留该版本根目录 `LICENSE`（Apache-2.0）；本仓库仅收录两个可移植 Skill。
+
 #### [thermo-nuclear-code-quality-review](./skills/thermo-nuclear-code-quality-review/)
 
 对代码变更执行极严格的可维护性审查：抽象边界、超大文件、分支复杂度、重复逻辑和结构性简化机会。适合明确要求深度或严苛代码质量审查的场景；不替代功能正确性、安全性或测试审查。
