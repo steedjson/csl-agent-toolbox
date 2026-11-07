@@ -32,10 +32,6 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 ### 模型与路由（models-and-routing）
 
-#### [codexradar-model-advisor](./skills/codexradar-model-advisor/)
-
-读取 CodexRadar 当前实测数据与 15 天社区评分历史，为 OpenAI Codex 模型和 reasoning effort 提供质量、速度、成本建议。仅推荐当前有实测数据的组合，支持 Codex、Claude Code 和其他 Agent Skills 兼容宿主。
-
 #### [grok-build-cli](./skills/grok-build-cli/)
 
 让 Codex 调用本机 `grok` CLI：检查可用模型与凭据、选择单轮或 agentic 调用、轮询长任务并返回结果。只覆盖调用机制，不规定任务内容。凭据可以是 `~/.grok/config.toml` 模型 key、已缓存的 `auth.json`，或环境变量 `XAI_API_KEY`；不必先 `grok login`。源： [Pluviobyte/rnskill](https://github.com/Pluviobyte/rnskill/tree/main/skills/grok-build-cli)，可用性检查已按官方认证方式放宽。
@@ -434,8 +430,6 @@ python3 scripts/toolbox.py update --apply
 csl-agent-toolbox/
 ├── .agents/plugins/marketplace.json
 ├── skills/
-│   ├── codexradar-model-advisor/
-│   │   └── SKILL.md
 │   ├── custom-image-gen/
 │   │   ├── SKILL.md
 │   │   └── agents/openai.yaml

@@ -5,14 +5,6 @@
   "repo": "https://github.com/steedjson/csl-agent-toolbox",
   "skills": [
     {
-      "name": "codexradar-model-advisor",
-      "category": "models-and-routing",
-      "description": "Live CodexRadar measurements and OpenAI Codex model/effort recommendations",
-      "files": [
-        "SKILL.md"
-      ]
-    },
-    {
       "name": "grok-build-cli",
       "category": "models-and-routing",
       "description": "Invoke the locally installed Grok Build CLI from any host agent and return Grok's response",

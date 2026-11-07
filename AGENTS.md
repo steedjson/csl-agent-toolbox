@@ -25,7 +25,6 @@ This repository is the single source for every skill and plugin. Host skill dire
 - `.agents/plugins/marketplace.json`: repository plugin marketplace catalog; local plugin paths resolve relative to repository root.
 - `skills.json` `category`: discovery and classification metadata only, never a path resolver.
 - `README.md`: public skill list and usage overview.
-- `skills/codexradar-model-advisor/`: current OpenAI Codex model-advice skill.
 
 Entry point: `python3 scripts/toolbox.py` (`list`, `hosts`, `status`, `install`, `uninstall`, `import`, `check`, `update`). Reuse `scripts/install_skills.py` for Skill links and `scripts/sync_upstream.py` for three-way upstream merges. Offline tests: `python3 -m unittest discover -s scripts -p 'test_*.py'`. Do not document commands that do not exist.
 
@@ -66,15 +65,6 @@ Vendored components declare an `upstream` block in `skills.json` (`type`, source
 - A skill that delegates to another skill (its body is only `Call the Skill tool with "<name>"`) needs that dependency vendored too and declared as `"depends_on": ["<name>"]`; `validate_repo.py` checks the reference resolves.
 - Check before adding a new third-party skill: record the upstream coordinates and pin the revision actually vendored, then run `check` to confirm a clean baseline.
 - Keep the upstream `license` field accurate; do not vendor sources whose license forbids redistribution.
-
-## CodexRadar Skill
-
-- Treat CodexRadar as third-party empirical source, not OpenAI-official benchmark.
-- Recommend only OpenAI Codex model/effort combinations present in current measured data.
-- Fetch current page and community-rating endpoint; never reuse remembered measurements.
-- Keep latest rolling rating distinct from 15-day historical context.
-- Do not map Anthropic, Google, local, unknown, or uncovered models to Codex IQ values.
-- Treat configuration changes as separate action. Preserve unrelated settings and respect target scope.
 
 ## Verification
 
