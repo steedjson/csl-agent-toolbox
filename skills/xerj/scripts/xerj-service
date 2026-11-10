@@ -1,0 +1,285 @@
+#!/usr/bin/env bun
+import { mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync, renameSync, copyFileSync, chmodSync, openSync, closeSync, appendFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { dlopen, FFIType } from 'bun:ffi';
+
+const home = homedir();
+const storage = join(home, 'Library/Application Support/xerj');
+const binary = join(home, '.bun/bin/xerj');
+const service = `gui/${process.getuid()}/local.xerj`;
+const domain = `gui/${process.getuid()}`;
+const plist = join(home, 'Library/LaunchAgents/local.xerj.plist');
+const lock = join(storage, 'lifecycle.flock');
+const updateLock = join(storage, 'update.flock');
+const recoveryMarker = join(storage, 'recovery-required');
+const flock = dlopen('/usr/lib/libSystem.B.dylib', {flock:{args:[FFIType.i32,FFIType.i32],returns:FFIType.i32}}).symbols.flock;
+const leases = join(storage, 'operations');
+const statePath = join(storage, 'update-state.json');
+const logPath = join(home, 'Library/Logs/xerj/update.log');
+const endpoint = 'http://127.0.0.1:9300';
+const day = 86400000;
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const alive = pid => { if(!Number.isSafeInteger(pid) || pid<=0) return false; try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+function log(message) { appendFileSync(logPath, `${new Date().toISOString()} ${message}\n`, {mode:0o600}); }
+function state() { try { return JSON.parse(readFileSync(statePath,'utf8')); } catch (e) { if (e.code==='ENOENT') return {}; throw e; } }
+function save(value) { const temp=statePath+'.tmp'; writeFileSync(temp,JSON.stringify(value,null,2)+'\n',{mode:0o600}); renameSync(temp,statePath); }
+function native(args, options={}) {
+  const r=spawnSync(args[0],args.slice(1),{encoding:'utf8',timeout:120000,...options});
+  if(r.error || r.status!==0) throw new Error(`${args[0]} ${args[1]}: ${r.error?.message || r.stderr?.trim() || r.status}`);
+  return r.stdout.trim();
+}
+function version(path=binary) {
+  const output=native([path,'--version']);
+  const match=output.match(/^xerj v?(\d+\.\d+\.\d+(?:-[\w.-]+)?)/);
+  if(!match) throw new Error('Unrecognized XERJ version: '+output);
+  return match[1];
+}
+function loaded() { return spawnSync('/bin/launchctl',['print',service],{stdio:'ignore'}).status===0; }
+function pid() {
+  const r=spawnSync('/bin/launchctl',['print',service],{encoding:'utf8'});
+  return Number(r.stdout?.match(/\n\s*pid = (\d+)/)?.[1]) || null;
+}
+async function healthy() {
+  if(!existsSync(join(storage,'data/admin.key'))) return false;
+  const key=readFileSync(join(storage,'data/admin.key'),'utf8').trim();
+  try {
+    const r=await fetch(endpoint+'/_cluster/health',{headers:{Authorization:'ApiKey '+key},signal:AbortSignal.timeout(1500)});
+    if(r.status===401 || r.status===403) throw new Error('XERJ rejected the stored admin key');
+    if(!r.ok) return false;
+    const h=await r.json();
+    return h.cluster_name==='xerj' && !h.timed_out && h.status!=='red';
+  } catch(e) { if(e.message.includes('stored admin key')) throw e; return false; }
+}
+async function locked(fn, path=lock) {
+  mkdirSync(storage,{recursive:true,mode:0o700});
+  const fd=openSync(path,'a',0o600);
+  const deadline=Date.now()+900000;
+  try {
+    // Kernel releases the lock on exit or crash; no PID-file stealing race.
+    while(flock(fd,2|4)!==0) {
+      if(Date.now()>deadline) throw new Error('Timed out waiting for XERJ lifecycle lock');
+      await delay(100);
+    }
+    return await fn();
+  } finally { flock(fd,8); closeSync(fd); }
+}
+async function ensureUnlocked() {
+  if(existsSync(recoveryMarker)) throw new Error('XERJ restore needs attention; see '+recoveryMarker);
+  if(await healthy()) return;
+  const deadline=Date.now()+45000;
+  let lastError='';
+  while(!(await healthy())) {
+    // bootout returns before the old service has necessarily left the domain.
+    // Re-check registration on every pass rather than waiting on a disappearing job.
+    if(!loaded()) {
+      const r=spawnSync('/bin/launchctl',['bootstrap',domain,plist],{encoding:'utf8',timeout:5000});
+      lastError=r.stderr?.trim() || r.error?.message || '';
+    } else if(!pid()) {
+      spawnSync('/bin/launchctl',['kickstart',service],{stdio:'ignore',timeout:5000});
+    }
+    if(Date.now()>deadline) throw new Error('XERJ did not become healthy: '+lastError+'; inspect ~/Library/Logs/xerj/service*.log');
+    await delay(250);
+  }
+}
+export async function ensureService() { return locked(ensureUnlocked); }
+export async function acquireOperation() {
+  return locked(async()=>{
+    await ensureUnlocked();
+    mkdirSync(leases,{recursive:true,mode:0o700});
+    const file=join(leases,`${process.pid}-${randomUUID()}`);
+    writeFileSync(file,String(process.pid),{mode:0o600});
+    return ()=>rmSync(file,{force:true});
+  });
+}
+function busy() {
+  if(!existsSync(leases)) return false;
+  let count=0;
+  for(const name of readdirSync(leases)) {
+    const file=join(leases,name);
+    try {
+      if(alive(Number(readFileSync(file,'utf8')))) count++; else rmSync(file,{force:true});
+    } catch(e) { if(e.code!=='ENOENT') throw e; }
+  }
+  return count>0;
+}
+async function stop() {
+  const oldPid=pid();
+  if(loaded()) native(['/bin/launchctl','bootout',service]);
+  const deadline=Date.now()+30000;
+  while(oldPid && alive(oldPid)) {
+    if(Date.now()>deadline) throw new Error('XERJ did not stop gracefully; update aborted');
+    await delay(200);
+  }
+}
+function releaseMetadata() {
+  return JSON.parse(native(['/usr/bin/curl','-fsSL','--connect-timeout','10','--max-time','30','-H','User-Agent: xerj-local-updater','https://api.github.com/repos/xerj-org/xerj/releases/latest'],{timeout:35000}));
+}
+function installArgs(options) {
+  const requested=options.find(x=>x.startsWith('--version='))?.slice(10);
+  if(options.some(x=>x!=='--force' && !x.startsWith('--version='))) throw new Error('Usage: xerj-service install [--force] [--version=X.Y.Z]');
+  if(process.platform!=='darwin' || process.arch!=='arm64') throw new Error('This installer currently supports macOS Apple Silicon only');
+  return {requested: requested?.replace(/^v/,''), force: options.includes('--force')};
+}
+async function install(options=[]) {
+  const {requested,force}=installArgs(options);
+  return locked(async()=>{
+    if(existsSync(binary) && !force) throw new Error(`${binary} already exists; use --force to replace it`);
+    const release=releaseMetadata();
+    const latest=release.tag_name?.replace(/^v/,'');
+    const target=requested || latest;
+    if(!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(target)) throw new Error('Invalid XERJ version');
+    if(!requested && (release.draft || release.prerelease)) throw new Error('Latest release is not a stable release');
+    const name=`xerj-${target}-aarch64-apple-darwin.tar.gz`;
+    const asset=release.assets?.find(a=>a.name===name);
+    const checksum=release.assets?.find(a=>a.name===name+'.sha256');
+    const base=`https://github.com/xerj-org/xerj/releases/download/v${target}/`;
+    if(!asset || !checksum || asset.browser_download_url!==base+name || checksum.browser_download_url!==base+name+'.sha256') throw new Error('Official macOS arm64 release assets not found');
+    const stage=join(storage,'install-'+randomUUID()); mkdirSync(stage,{mode:0o700});
+    try {
+      const archive=join(stage,name);
+      native(['/usr/bin/curl','-fsSL','--connect-timeout','15','--max-time','300','--output',archive,asset.browser_download_url],{timeout:305000});
+      native(['/usr/bin/curl','-fsSL','--connect-timeout','15','--max-time','30','--output',archive+'.sha256',checksum.browser_download_url],{timeout:35000});
+      const expected=readFileSync(archive+'.sha256','utf8').trim().match(/^([a-fA-F0-9]{64})\s+\*?([^\r\n]+)$/);
+      const hasher=new Bun.CryptoHasher('sha256'); for await (const chunk of Bun.file(archive).stream()) hasher.update(chunk);
+      const digest=hasher.digest('hex');
+      if(!expected || expected[2]!==name || expected[1].toLowerCase()!==digest || (asset.digest && asset.digest!==`sha256:${digest}`)) throw new Error('SHA-256 mismatch; installation refused');
+      const member=`xerj-${target}-aarch64-apple-darwin/xerj`;
+      if(!native(['/usr/bin/tar','-tzf',archive]).split('\n').includes(member)) throw new Error('Binary absent from release archive');
+      native(['/usr/bin/tar','-xzf',archive,'-C',stage,member]);
+      const candidate=join(stage,member); chmodSync(candidate,0o755); if(version(candidate)!==target) throw new Error('Downloaded binary version mismatch');
+      if(busy()) throw new Error('An XERJ project operation is active; installation aborted');
+      if(loaded()) await stop();
+      const backup=binary+'.install-backup'; if(existsSync(binary)) copyFileSync(binary,backup);
+      copyFileSync(candidate,binary+'.next'); chmodSync(binary+'.next',0o755); renameSync(binary+'.next',binary);
+      try { await ensureUnlocked(); } catch(e) {
+        if(existsSync(backup)) { await stop(); copyFileSync(backup,binary+'.next'); chmodSync(binary+'.next',0o755); renameSync(binary+'.next',binary); await ensureUnlocked(); }
+        throw e;
+      }
+      rmSync(backup,{force:true}); log(`Installed XERJ ${target}; service healthy`); return {status:'installed',version:target,binary,service};
+    } finally { rmSync(stage,{recursive:true,force:true}); }
+  });
+}
+export function scheduleUpdate() {
+  // Upstream omits this mkdir; without it every xerj-project subcommand dies
+  // with ENOENT whenever ~/Library/Logs/xerj is absent (see docs/BUGLOG/main.md).
+  mkdirSync(dirname(logPath),{recursive:true,mode:0o700});
+  const fd=openSync(logPath,'a',0o600);
+  try {
+    const child=spawn(process.execPath,[join(home,'.bun/bin/xerj-service'),'update'],{detached:true,stdio:['ignore',fd,fd],env:{...process.env,XERJ_DISABLE_FEEDBACK:'true'}});
+    child.on('error',e=>log('Unable to schedule update: '+e.message));
+    child.unref();
+  } finally { closeSync(fd); }
+}
+async function update(force=false,reinstall=false) {
+  // Only one updater downloads; normal operations use a separate, short-lived lock.
+  return locked(async()=>{
+    const previous=state();
+    if(!force && previous.nextCheck && Date.now()<Date.parse(previous.nextCheck)) return {...previous,cached:true};
+    const current=version();
+    const attempt={...previous,lastAttempt:new Date().toISOString(),nextCheck:new Date(Date.now()+day).toISOString(),installed:current,status:'checking'};
+    save(attempt);
+    let stage;
+    let targetVersion;
+    let cutoverStarted=false;
+    try {
+      const release=releaseMetadata();
+      const latest=release.tag_name?.replace(/^v/,'');
+      if(!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(latest) || release.draft || release.prerelease) throw new Error('Invalid latest-release metadata');
+      targetVersion=latest;
+      if(previous.failedVersion===latest && !force) {
+        const result={...attempt,latest,status:'skipped-failed-version',error:previous.error};
+        save(result); log('Skipping previously failed release '+latest); return result;
+      }
+      if(Bun.semver.order(latest,current)<=0 && !reinstall) {
+        const result={...attempt,latest,status:'up-to-date',lastSuccess:new Date().toISOString(),error:null};
+        save(result); log(`Up to date: ${current}`); return result;
+      }
+      if(Bun.semver.order(latest,current)<0) throw new Error('Refusing downgrade');
+      const defer=()=>{
+        const result={...attempt,latest,status:'deferred-busy',nextCheck:new Date(Date.now()+900000).toISOString(),error:null};
+        save(result); log('Update deferred for 15 minutes: project operation active'); return result;
+      };
+      if(await locked(async()=>busy())) return defer();
+      const name=`xerj-${latest}-aarch64-apple-darwin.tar.gz`;
+      const asset=release.assets?.find(a=>a.name===name);
+      const checksum=release.assets?.find(a=>a.name===name+'.sha256');
+      const base=`https://github.com/xerj-org/xerj/releases/download/${release.tag_name}/`;
+      if(!asset || !checksum || asset.browser_download_url!==base+name || checksum.browser_download_url!==base+name+'.sha256') throw new Error('Missing official macOS arm64 assets');
+      stage=join(storage,'stage-'+randomUUID()); mkdirSync(stage,{mode:0o700});
+      const archive=join(stage,name);
+      native(['/usr/bin/curl','-fsSL','--connect-timeout','15','--max-time','300','--output',archive,asset.browser_download_url],{timeout:305000});
+      native(['/usr/bin/curl','-fsSL','--connect-timeout','15','--max-time','30','--output',archive+'.sha256',checksum.browser_download_url],{timeout:35000});
+      const expected=readFileSync(archive+'.sha256','utf8').trim().match(/^([a-fA-F0-9]{64})\s+\*?([^\r\n]+)$/);
+      const hasher=new Bun.CryptoHasher('sha256');
+      for await (const chunk of Bun.file(archive).stream()) hasher.update(chunk);
+      const digest=hasher.digest('hex');
+      if(!expected || expected[2]!==name || expected[1].toLowerCase()!==digest || (asset.digest && asset.digest!==`sha256:${digest}`)) throw new Error('SHA-256 mismatch; installation refused');
+      const member=`xerj-${latest}-aarch64-apple-darwin/xerj`;
+      if(!native(['/usr/bin/tar','-tzf',archive]).split('\n').includes(member)) throw new Error('Binary absent from release archive');
+      native(['/usr/bin/tar','-xzf',archive,'-C',stage,member]);
+      const candidate=join(stage,member); chmodSync(candidate,0o755);
+      if(version(candidate)!==latest) throw new Error('Downloaded binary version mismatch');
+      return await locked(async()=>{
+        if(busy()) return defer();
+        if(existsSync(recoveryMarker)) throw new Error('Resolve pending restore before updating');
+        log(`Verified ${latest}; stopping service for backup and replacement`);
+        const backup=join(storage,'rollback');
+        const snapshot=join(stage,'rollback');
+        let replaced=false;
+        try {
+          cutoverStarted=true;
+          await stop();
+          mkdirSync(snapshot,{mode:0o700});
+          copyFileSync(binary,join(snapshot,'xerj'));
+          native(['/usr/bin/ditto',join(storage,'data'),join(snapshot,'data')],{timeout:600000});
+          // Retain the previous good backup until the new stopped snapshot is complete.
+          rmSync(backup,{recursive:true,force:true}); renameSync(snapshot,backup);
+          copyFileSync(candidate,binary+'.next'); chmodSync(binary+'.next',0o755); renameSync(binary+'.next',binary); replaced=true;
+          await ensureUnlocked();
+        } catch(e) {
+          if(replaced) {
+            writeFileSync(recoveryMarker,'Automatic restore in progress. Backup: '+backup+'\n',{mode:0o600});
+            await stop();
+            const restore=join(storage,'data.restore');
+            rmSync(restore,{recursive:true,force:true});
+            // A failed copy leaves the recovery marker and service stopped, never a partial database live.
+            native(['/usr/bin/ditto',join(backup,'data'),restore],{timeout:600000});
+            copyFileSync(join(backup,'xerj'),binary+'.next'); chmodSync(binary+'.next',0o755); renameSync(binary+'.next',binary);
+            const failed=join(storage,'failed-update');
+            rmSync(failed,{recursive:true,force:true}); renameSync(join(storage,'data'),failed); renameSync(restore,join(storage,'data'));
+            rmSync(recoveryMarker); rmSync(failed,{recursive:true,force:true});
+          }
+          await ensureUnlocked();
+          throw e;
+        }
+        const result={...attempt,installed:latest,latest,status:'updated',lastSuccess:new Date().toISOString(),failedVersion:null,error:null};
+        save(result); log(`Updated ${current} -> ${latest}; service healthy; rollback snapshot retained`); return result;
+      });
+    } catch(e) {
+      save({...attempt,status:'error',error:e.message,failedVersion:cutoverStarted?targetVersion:previous.failedVersion,nextCheck:new Date(Date.now()+(cutoverStarted?day:3600000)).toISOString()}); log('Update failed: '+e.message); throw e;
+    } finally { if(stage) rmSync(stage,{recursive:true,force:true}); }
+  },updateLock);
+}
+if (import.meta.main) {
+  try {
+    const [command,...options]=process.argv.slice(2);
+    if(command==='install') {
+      console.log(JSON.stringify(await install(options),null,2));
+    } else if(command==='ensure' || command==='startup') {
+      await ensureService();
+      if(command==='startup') scheduleUpdate();
+      if(command==='ensure') console.log('XERJ service healthy');
+    } else if(command==='update') {
+      if(options.some(o=>!['--force','--reinstall'].includes(o))) throw new Error('Unknown update option');
+      console.log(JSON.stringify(await update(options.includes('--force')||options.includes('--reinstall'),options.includes('--reinstall')),null,2));
+    } else if(command==='status') {
+      console.log(JSON.stringify({version:version(),loaded:loaded(),pid:pid(),healthy:await healthy(),update:state()},null,2));
+    } else {
+      console.log('Usage: xerj-service install [--force] [--version=X.Y.Z] | startup | ensure | status | update [--force] [--reinstall]\ninstall: explicitly download, verify and install the official macOS arm64 binary, then create/use the existing LaunchAgent\nstartup: ensure service and schedule a once-daily update check\nupdate: install newer official release after SHA-256 verification\n--force: replace an existing binary or check now; --reinstall: reinstall latest and exercise activation');
+      if(command && command!=='--help') process.exitCode=2;
+    }
+  } catch(e) { console.error('xerj-service: '+e.message); process.exitCode=1; }
+}

@@ -1,0 +1,112 @@
+#!/usr/bin/env bun
+import { createHash } from 'node:crypto';
+import { realpathSync, readFileSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { acquireOperation, scheduleUpdate } from './xerj-service';
+
+const home = homedir();
+const storage = join(home, 'Library/Application Support/xerj');
+const executable = join(home, '.bun/bin/xerj');
+const url = 'http://127.0.0.1:9300';
+const args = process.argv.slice(2);
+const help = `Usage: xerj-project [--project /path/to/project] <command> [arguments]
+
+Run from any Git repository (including subdirectories), or specify a folder.
+For a non-Git folder, the current directory is the project root.
+
+Commands:
+  info                  Show root, unique prefix, endpoint, and journal path
+  index [options]       Index/reconcile added, changed, and deleted files
+  index --dry-run       Preview without writing indices
+  watch [options]       Index and watch until Ctrl+C (one watcher per project)
+  search "query"        Search source-code passages (supports -k N, --json)
+  def "symbol"          Find code definitions
+  query "query"         Search code OR documents; return paths and passages
+  map [options]         Show this project's datasets
+  status [options]      Show this project's journal/index progress
+
+Indexing uses --no-graph and 2 workers; --workers N can override concurrency.
+Projects share one authenticated local node, not separate security boundaries.
+Moving a folder changes its prefix; reindex at the new location.
+Index after edits, or keep watch running, before relying on search results.
+Native xerj remains available; this command supplies project routing and auth.
+Commands ensure the local service is running and schedule throttled update checks.
+Service/update status: xerj-service status; manual check: xerj-service update --force.
+`;
+function fail(message) { console.error(`xerj-project: ${message}`); process.exit(2); }
+if (!args.length || args[0] === '--help' || args[0] === '-h') {
+  console.log(help);
+  process.exit(0);
+}
+let root;
+if (args[0] === '--project') {
+  args.shift();
+  root = args.shift();
+  if (!root) fail('--project requires a folder');
+} else {
+  const git = spawnSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' });
+  root = git.status === 0 ? git.stdout.trim() : process.cwd();
+}
+try { root = realpathSync(root); } catch (e) { fail(e.message); }
+const command = args.shift();
+if (!['info', 'index', 'watch', 'search', 'def', 'query', 'map', 'status'].includes(command)) {
+  fail(`unknown command ${command}; use --help`);
+}
+const slug = root.split('/').pop().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'project';
+const digest = createHash('sha256').update(root).digest('hex').slice(0, 16);
+const prefix = `p-${slug}-${digest}`;
+const state = join(storage, 'projects', prefix);
+if (command === 'info') {
+  console.log(JSON.stringify({ root, prefix, url, state }, null, 2));
+  process.exit(0);
+}
+for (const arg of args) {
+  if (/^--(prefix|url|state-dir|api-key|brain|fresh|config)(=|$)/.test(arg)) {
+    fail(`${arg} cannot override project routing; use native xerj for manual administration`);
+  }
+}
+let releaseOperation;
+try { releaseOperation = await acquireOperation(); }
+catch (e) { console.error(`xerj-project: ${e.message}`); process.exit(1); }
+process.on('exit', releaseOperation);
+scheduleUpdate();
+let key;
+try { key = readFileSync(join(storage, 'data/admin.key'), 'utf8').trim(); }
+catch { fail('local node key is unavailable; check launchctl print gui/$(id -u)/local.xerj'); }
+if (command === 'query') {
+  if (args.length !== 1 || !args[0].trim()) fail('query requires one quoted search string');
+  try {
+    const response = await fetch(`${url}/${prefix}-*/_search`, {
+      method: 'POST',
+      headers: { Authorization: `ApiKey ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: { query_string: { query: args[0] } }, size: 5,
+        _source: ['ax_path', 'title'], fields: ['_passage'] }),
+      signal: AbortSignal.timeout(30000),
+    });
+    const text = await response.text();
+    if (!response.ok) { console.error(`HTTP ${response.status}: ${text}`); process.exit(1); }
+    console.log(JSON.stringify(JSON.parse(text), null, 2));
+  } catch (e) { console.error(`xerj-project: ${e.message}`); process.exit(1); }
+  process.exit(0);
+}
+let nativeArgs;
+if (command === 'index' || command === 'watch') {
+  mkdirSync(state, { recursive: true, mode: 0o700 });
+  nativeArgs = ['autoindex', root, '--no-graph', '--workers', '2', '--code-analyzer', 'code',
+    ...(command === 'watch' ? ['--watch'] : []), ...args, '--state-dir', state];
+} else if (command === 'map' || command === 'status') {
+  nativeArgs = ['autoindex', command, ...args, '--state-dir', state];
+} else {
+  nativeArgs = [command, ...args];
+}
+const result = spawnSync(executable, [...nativeArgs, '--url', url, '--prefix', prefix], {
+  stdio: 'inherit', env: { ...process.env, XERJ_API_KEY: key, XERJ_DISABLE_FEEDBACK: 'true' },
+});
+if (result.error) { console.error(`xerj-project: ${result.error.message}`); process.exit(1); }
+if (result.signal) {
+  process.kill(process.pid, result.signal);
+} else {
+  process.exit(result.status ?? 1);
+}

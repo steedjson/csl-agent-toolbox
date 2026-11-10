@@ -2,6 +2,21 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-11-10][xerj] 更正上一条:崩溃根因包装层是本地自有代码,非上游发行物
+- 现象: 查上游 v1.0.0-rc.101/rc.102 与 xerj-org/xerj 全库,`xerj-service`、`xerj-project` 零命中;官方 get.sh 只装单个 `xerj` 二进制,官方 Claude 插件直接跑 `xerj mcp`
+- 根因: 上一条写"根治需上游建目录"属错误归因。这两个文件是本机自行编写的包装层,本仓库就是唯一源,改本地即根治
+- 修法: 包装层已纳入 `skills/xerj/scripts/`, `~/.bun/bin/<name>` 改为指回仓库的软链;`install.sh` 部署且不覆盖有差异的本地副本。`xerj-service install/update` 只替换 `xerj` 二进制(copyFileSync 目标仅 `~/.bun/bin/xerj`),不会冲掉修复
+- 关联: skills/xerj/scripts/{xerj-service,xerj-project,install.sh}、skills/xerj/SKILL.md
+- 教训: 报"上游 bug"前先确认该文件是否真由上游发行;文件名带产品名不等于产品自带
+
+## [2026-11-10][xerj] 缺少 ~/Library/Logs/xerj 时 xerj-project 直接崩溃,自动更新调度器未建目录
+- 现象: `xerj-project <任何子命令>` 在 stdout 输出 `ENOENT ... ~/Library/Logs/xerj/update.log` 的 Bun 堆栈并中止;服务本身 healthy、索引完好,但命令不可用。10-25 起零星出现,11-10 高频复现
+- 根因: `xerj-service` 的 `scheduleUpdate()` 用 `openSync(logPath,'a')` 打开日志,不先 `mkdirSync(dirname(logPath))`;只要日志目录不存在(清缓存/新机/换 HOME)即抛错,且该调用在命令分发之前,连带所有子命令失效
+- 修法: `mkdir -p ~/Library/Logs/xerj`(临时);根治需上游在 `scheduleUpdate` 内先建目录,或本地包一层
+- 关联: ~/.bun/bin/xerj-project:74、~/.bun/bin/xerj-service:166
+- 复发: 2 次 · 最近 2026-11-10
+- 教训: 带后台自动更新的 wrapper,首行 I/O 失败会拖垮全部子命令;排障先看 wrapper 自身而非服务端
+
 ## [2026-11-03][csl-jenkins-deploy-scaffold] 将私人部署经验泛化为固定契约导致不可迁移与选型冲突
 - 现象: 技能要求访问私人项目/运维目录并使用固定域名、镜像库;history 路由被强制分镜像;正文要求 env 而 split 参考允许后端缺 env;启动默认 schema push 和演示数据导入
 - 根因: 把单次上线的文件布局、基础设施和修复措施当作所有项目的前提,缺少事实发现、方案比较、关键缺项提问及动作授权边界

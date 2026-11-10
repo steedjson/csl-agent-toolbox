@@ -1,11 +1,13 @@
 ---
 name: xerj
-description: Search this project's indexed source code and documents with the locally installed XERJ service. Use for finding relevant code, definitions, or document passages across an unfamiliar project; supports separate indices for each project.
+description: Search this project's indexed source code and documents with the locally installed XERJ service. Use for finding which document/config states a rule, or for cross-project retrieval; use CodeGraph instead for symbol call graphs and blast radius.
 ---
 
 # Local project search
 
-Verified against XERJ 1.0.0-rc.96 (macOS arm64, 2026-10-18); re-verify after service self-updates.
+Verified against XERJ 1.0.0-rc.101 (macOS arm64, 2026-11-10); re-verify after service self-updates.
+
+Index coverage: `.md`, configs and code. `search` covers prose fine and returns the matching passage with a line number — it is the default. Use `query` only when you need query-string syntax (`field:value`) or an ES query-DSL object.
 
 Use `~/.bun/bin/xerj-project` from the TARGET PROJECT's working directory, never from this skill directory. The wrapper resolves the Git root (or current directory for non-Git folders), hashes its full path into a unique index prefix, and supplies the local endpoint and authentication without printing the key. `--project /absolute/folder` explicitly selects another project or a non-Git document folder.
 
@@ -21,6 +23,31 @@ xerj-project status
 ```
 
 Use the absolute executable path above if PATH is unavailable. The native `xerj` executable remains unchanged; `xerj-project` is the installed project-routing helper.
+
+## The wrappers are local code, kept here
+
+`xerj-service` and `xerj-project` are **not** part of the XERJ release. Upstream ships one static `xerj` binary; `xerj-service install/update` replaces only that binary and never touches these two files. They live in `scripts/` beside this file, and `~/.bun/bin/<name>` is a symlink back here:
+
+```sh
+sh scripts/install.sh          # (re)link both wrappers; XERJ_BIN_DIR overrides ~/.bun/bin
+```
+
+`install.sh` adopts a live copy whose body matches the repo copy, and moves any diverged copy aside as `<name>.pre-repo.<timestamp>` instead of overwriting it. On a new machine, run it after installing the binary.
+
+Local fixes carried in `scripts/xerj-service` (re-apply when the wrapper is ever regenerated):
+
+- `scheduleUpdate()` creates `~/Library/Logs/xerj` before opening the log. Without it every `xerj-project` subcommand died with ENOENT whenever that directory was absent.
+
+## MCP
+
+`xerj` is registered as a user-scope MCP server (`claude mcp list` shows it), which avoids the ~1.5 s process start. Its 23 tools default to the `ax-*` index and return **zero hits** unless scoped, because autoindex writes `p-<repo>-*`:
+
+```
+xerj_search  { query: "...", index: "p-<repo>-*", limit: 10 }
+xerj_def     { symbol: "cmd_unlink", index: "p-<repo>-*" }
+```
+
+Get the prefix from `xerj-project info` (`"prefix": "p-..."`); wildcarding the repo name (`p-csl-agent-toolbox-*`) also works. Prefer the CLI (`xerj-project ...`) when the shell is available — it resolves the prefix automatically.
 
 ## Installation
 
@@ -45,7 +72,7 @@ Project commands automatically ensure the node is healthy before using it. The i
 
 - Index before first use. Preview a large or unfamiliar folder with `index --dry-run`; do not index unrelated folders or clone reference repositories without a request.
 - Re-run `index` after edits, or use `watch` in a user-visible terminal and stop it with Ctrl+C. Indexing uses `--no-graph` so added/changed/deleted files reconcile; do not add `--fresh`.
-- `search` and `def` target source code. For document-only folders or an unknown-field `defs` error, use `query`, which searches code or document fields using query-string syntax and returns at most five paths/passages.
+- `search` and `def` cover both source code and prose (verified on `.md`: `search` returned `AGENTS.md:9` for a policy query). `query` is the escape hatch for query-string syntax or an ES query-DSL object, and returns at most five paths/passages.
 - Each project has its own prefix and journal. Same-named folders in different locations remain distinct. A moved project gets a new prefix and needs indexing again. Projects share the same authenticated service; prefixes are routing, not access-control boundaries.
 - Never override the prefix, URL, or state directory. For a deliberate manual administration task use native `xerj` with explicit routing.
 - Default retrieval is lexical, not neural semantic understanding. A missing hit does not prove absence: check project info, indexing status, ignore rules, alternative wording, or direct source search. Ranking is lexical too: rely on the top definition-boosted hit, treat low-ranked hits as weakly related, and confirm exact strings directly. Read the current source before editing; indexed passages may be stale.
