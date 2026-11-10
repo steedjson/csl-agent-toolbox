@@ -4,7 +4,11 @@
 # install/update` only replaces the `xerj` binary and never touches them.
 set -eu
 
+# Resolve through symlinks: this script is reachable via the very links it
+# writes (e.g. run through a host's skills/ mount), and a link built from a
+# link path would break the moment that mount goes away.
 src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+src=$(cd -- "$src" && pwd -P)
 dst="${XERJ_BIN_DIR:-$HOME/.bun/bin}"
 mkdir -p "$dst"
 tmp=$(mktemp -d)
