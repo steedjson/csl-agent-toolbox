@@ -248,6 +248,10 @@ Skill 元设计器：先把模糊需求归根，再设计、生成、审计、�
 
 读取微信视频号公开单篇分享链接，保存视频、元数据、带时间戳转写与抽帧。支持 ffmpegtool、paste2vid 及显式选用登录态的元宝路线；各服务需单独允许，包含解析预算、下载边界、模型校验及失败状态。来源为用户附件的本地修订版，记录见 `skills.json` 的 `source_note`。已通过 81 项离线回归；单条真实视频经 paste2vid 下载、tiny 转写与抽帧成功，tiny 有明显错字；元宝及 FunASR 线上兼容性未验证。
 
+#### Solo to Team 协作技能族（4 个，vendored 自 [dabingfy-dot/solo-to-team-skills](https://github.com/dabingfy-dot/solo-to-team-skills)）
+
+一人统筹多个 AI 助手的派活—收活—核证—验收闭环。[`dispatch-accept-verify`](./skills/dispatch-accept-verify/) 管派收：登记行写明谁在干、谁来收、谁到点查，已接单／已收到成果／已验收三态分开记，没人接升级，附登记行模板（`templates/登记行模板.md` 随技能目录一并 vendor），正文交叉引用 `evidence-before-done`，建议同装；[`evidence-before-done`](./skills/evidence-before-done/) 是铁规技能：说「做好了」之前先拿到对得上当前版本的有效证据，执行人自己的报告不算独立核验，可单装；[`beginner-ops-writing`](./skills/beginner-ops-writing/) 管新手操作说明写法（一次一步、点名唯一、写清做完会看到什么）；[`ops-case-notes`](./skills/ops-case-notes/) 是两组脱敏真实案例（日更流水线、验收链抓漏），纯参考。上游 MIT（仓库根 LICENSE + NOTICE，方法借鉴自 obra/superpowers），按 `skills.json` 的 `upstream` 固定 commit 同步，四支共用同一 pin。
+
 ## Codex 插件
 
 `plugins/` 存放宿主原生插件包，兼容性由插件 manifest 决定。插件登记在 `skills.json` 的 `plugins` 数组；`.agents/plugins/marketplace.json` 是供 Codex 发现和安装插件的 marketplace 目录。当前插件包含 hook，安装后需显式信任并验证激活。

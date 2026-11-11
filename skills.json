@@ -1671,6 +1671,71 @@
         "synced_at": "2026-11-11",
         "license": "Kubai Icons License (source-available; redistribute exact unmodified copies only, no derivative versions)"
       }
+    },
+    {
+      "name": "dispatch-accept-verify",
+      "category": "productivity",
+      "description": ">-",
+      "files": [
+        "SKILL.md",
+        "templates/登记行模板.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "dabingfy-dot/solo-to-team-skills",
+        "path": "skills/dispatch-accept-verify",
+        "ref": "bc9c19458e9d4afe42e506fc65673a68c26c6a56",
+        "synced_at": "2026-11-11",
+        "license": "MIT"
+      }
+    },
+    {
+      "name": "evidence-before-done",
+      "category": "productivity",
+      "description": ">-",
+      "files": [
+        "SKILL.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "dabingfy-dot/solo-to-team-skills",
+        "path": "skills/evidence-before-done",
+        "ref": "bc9c19458e9d4afe42e506fc65673a68c26c6a56",
+        "synced_at": "2026-11-11",
+        "license": "MIT"
+      }
+    },
+    {
+      "name": "beginner-ops-writing",
+      "category": "productivity",
+      "description": ">-",
+      "files": [
+        "SKILL.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "dabingfy-dot/solo-to-team-skills",
+        "path": "skills/beginner-ops-writing",
+        "ref": "bc9c19458e9d4afe42e506fc65673a68c26c6a56",
+        "synced_at": "2026-11-11",
+        "license": "MIT"
+      }
+    },
+    {
+      "name": "ops-case-notes",
+      "category": "productivity",
+      "description": ">-",
+      "files": [
+        "SKILL.md"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "dabingfy-dot/solo-to-team-skills",
+        "path": "skills/ops-case-notes",
+        "ref": "bc9c19458e9d4afe42e506fc65673a68c26c6a56",
+        "synced_at": "2026-11-11",
+        "license": "MIT"
+      }
     }
   ],
   "plugins": [
