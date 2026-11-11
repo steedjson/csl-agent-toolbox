@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lumno 动态图标</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: header and control row, then one large gray board with strict icon columns (hover row, size ladder, color rows), then a spec list with each icon's data controls. */
+:root {
+  --bg: #F4F5F7;
+  --surface: #FFFFFF;
+  --fg: #171B22;
+  --muted: #5E6470;
+  --line: #DFE2E7;
+  --chip: #EEF0F3;
+  --pick: #5393FF;
+  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101216; --surface: #171A20; --fg: #E7E9ED; --muted: #969CA8; --line: #2A2E36; --chip: #20242B;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101216; --surface: #171A20; --fg: #E7E9ED; --muted: #969CA8; --line: #2A2E36; --chip: #20242B;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; }
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 24px;
+}
+header { display: grid; gap: 8px; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(24px, 3.6vw, 32px); line-height: 1.25; font-weight: 700; text-wrap: balance; }
+.intro { margin: 0; max-width: 64ch; color: var(--muted); font-size: 14.5px; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+.swatch {
+  width: 22px; height: 22px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); background: var(--c);
+}
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--c); }
+.seg {
+  font: inherit; font-size: 12px; color: var(--fg); cursor: pointer;
+  background: var(--chip); border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px;
+}
+.seg[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.seg:hover { border-color: var(--muted); }
+.dragchip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 3px 12px 3px 5px;
+  border-radius: 999px; border: 1px dashed var(--muted); font-size: 12px; cursor: grab; user-select: none; background: var(--surface);
+}
+.dragchip i { width: 18px; height: 18px; border-radius: 5px; background: var(--pick); display: inline-grid; place-items: center; color: #fff; font-style: normal; font-size: 11px; font-weight: 700; }
+button:focus-visible, .cell:focus-visible, input:focus-visible, .dragchip:focus-visible { outline: 2px solid var(--pick); outline-offset: 2px; }
+
+/* The board keeps its own grays so icons can be judged against a fixed ground. */
+.canvas {
+  --cv: #E5E6E9; --cv-ink: #2B2E35; --cv-sub: #7A7F89; --cv-rule: rgba(20, 24, 32, .08); --cv-hover: rgba(255, 255, 255, .55);
+  background: var(--cv);
+  color: var(--cv-ink);
+  border-radius: 20px;
+  overflow-x: auto;
+  padding-block: 28px 20px;
+}
+.canvas[data-bg="mid"] { --cv: #A8ABB2; --cv-ink: #1C1F25; --cv-sub: #3F434B; --cv-rule: rgba(20, 24, 32, .12); --cv-hover: rgba(255, 255, 255, .28); }
+.canvas[data-bg="dark"] { --cv: #2A2C31; --cv-ink: #ECEDEF; --cv-sub: #9298A2; --cv-rule: rgba(255, 255, 255, .08); --cv-hover: rgba(255, 255, 255, .06); }
+.board {
+  display: grid;
+  grid-template-columns: 76px repeat(11, 84px);
+  width: max-content;
+  margin: 0 auto;
+  padding-inline: 20px;
+}
+.rowlabel {
+  font-family: var(--font-mono); font-size: 10.5px; color: var(--cv-sub);
+  display: flex; flex-direction: column; justify-content: center; line-height: 1.35;
+}
+.rowlabel b { font-family: var(--font-sans); font-weight: 600; font-size: 12px; color: var(--cv-ink); }
+.cell {
+  display: grid; place-items: center; border-radius: 12px; cursor: pointer; position: relative;
+  transition: background-color .16s;
+}
+.cell:hover { background: var(--cv-hover); }
+.cell svg { overflow: visible; display: block; }
+.hero { height: calc(var(--s) + 52px); grid-template-rows: 1fr auto; padding-block: 8px 6px; }
+.hero .nm { font-size: 11.5px; color: var(--cv-ink); white-space: nowrap; }
+.hero .nm small { display: block; text-align: center; font-family: var(--font-mono); font-size: 9.5px; color: var(--cv-sub); }
+.size, .tone { height: 46px; }
+.rule {
+  grid-column: 1 / -1; height: 1px; background: var(--cv-rule); margin: 10px 0 12px;
+}
+.section {
+  grid-column: 1 / -1; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cv-sub); padding-bottom: 4px;
+}
+.droppable::after {
+  content: ""; position: absolute; top: 8px; right: 10px; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--cv-sub); opacity: .7;
+}
+.guide { display: none; }
+.canvas[data-guides="on"] .guide { display: inline; }
+.guide * { vector-effect: non-scaling-stroke; stroke-width: 1px; fill: none; stroke: #FF2D7A; opacity: .55; }
+.canvas-note { text-align: center; font-size: 11.5px; color: var(--cv-sub); padding: 12px 16px 0; }
+
+.recipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 28px; }
+.recipe div { display: grid; gap: 3px; align-content: start; }
+.recipe b { font-size: 13.5px; font-weight: 600; }
+.recipe p { margin: 0; font-size: 13px; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 11.5px; background: var(--chip); border-radius: 4px; padding: 0 4px; }
+
+.specs { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+.spec {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0;
+}
+.spec-head { display: flex; align-items: center; gap: 12px; }
+.spec-head .ico { width: 44px; height: 44px; border-radius: 10px; background: #E5E6E9; display: grid; place-items: center; flex: none; }
+.spec-head .ico svg { overflow: visible; }
+.spec h3 { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.spec h3 span { font-family: var(--font-mono); font-size: 10.5px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; }
+.chips span { font-size: 11px; padding: 0 7px; border-radius: 999px; background: var(--chip); line-height: 19px; }
+dl { margin: 0; display: grid; grid-template-columns: 34px 1fr; gap: 3px 8px; font-size: 12.5px; }
+dt { color: var(--muted); }
+dd { margin: 0; min-width: 0; }
+.ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+.ctl output, .ctl .st { font-family: var(--font-mono); font-size: 12px; min-width: 2ch; text-align: center; }
+.ctl .st { color: var(--muted); text-align: left; }
+.ctl input[type="range"] { flex: 1 1 110px; min-width: 0; accent-color: var(--pick); }
+svg text { font-family: var(--font-sans); }
+.ol { fill: none; stroke-width: .7; }
+.ln { fill: none; stroke-width: 1; stroke-linecap: round; }
+footer { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+footer code { background: none; padding: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Lumno · Icon lab</div>
+    <h1>从文件夹图标长出来的功能图标</h1>
+    <p class="intro">十个功能图标，沿用书签文件夹图标的分层、关键帧形变和单色推导，并统一放在同一套网格上。灰色画板里每列是一个图标：第一行可以悬停，下面是实际尺寸和各个颜色。</p>
+  </header>
+
+  <div class="controls">
+    <div class="group" role="group" aria-label="主色"><span class="label">主色</span><span id="swatches" class="group"></span></div>
+    <div class="group" role="group" aria-label="画板底色"><span class="label">底色</span>
+      <button class="seg" data-bg="light" aria-pressed="true">浅灰</button><button class="seg" data-bg="mid" aria-pressed="false">中灰</button><button class="seg" data-bg="dark" aria-pressed="false">深灰</button>
+    </div>
+    <div class="group" role="group" aria-label="悬停行尺寸"><span class="label">悬停行</span>
+      <button class="seg" data-size="64" aria-pressed="false">64</button><button class="seg" data-size="48" aria-pressed="true">48</button><button class="seg" data-size="40" aria-pressed="false">40</button>
+    </div>
+    <div class="group">
+      <button class="seg" id="guides" aria-pressed="false">网格</button>
+      <button class="seg" id="slow" aria-pressed="false">慢放 ×4</button>
+      <button class="seg" id="all" aria-pressed="false">全部触发</button>
+    </div>
+    <span class="dragchip" draggable="true" id="chip" tabindex="0"><i>L</i>拖到带圆点的图标上</span>
+  </div>
+
+  <section class="canvas" id="canvas" data-bg="light" data-guides="off" aria-label="图标画板">
+    <div class="board" id="board"></div>
+    <p class="canvas-note">打开“网格”可以看到活动区、内容区、圆形参考和底边线。</p>
+  </section>
+
+  <section class="recipe" aria-label="构造方法">
+    <div><b>三层叠放</b><p>后片带投影，中间是白色内容，前片带一道内高光。触发时前片让开，露出内容。</p></div>
+    <div><b>两组关键帧</b><p>每个部件写静止、触发两种形状，<code>460ms</code> 走 <code>cubic-bezier(.22,1,.36,1)</code> 逐个数字插值，中途折返从当前形状继续。</p></div>
+    <div><b>一个主色</b><p>渐变、描边、投影都按相对 <code>#5393FF</code> 的明暗推导。Mono 用同一条规则推到中性灰。</p></div>
+    <div><b>同一套网格</b><p>活动区 <code>23×21</code>，底边对齐 <code>y=23</code>。外圆角 <code>3.2</code>，内容内缩 <code>2</code>、圆角 <code>1.2</code>，文字线间距 <code>2.6</code>，描边只用 <code>.7 / 1 / 1.2</code> 三档。</p></div>
+  </section>
+
+  <section class="specs" id="specs" aria-label="图标说明"></section>
+
+  <footer>原型做法见 <code>src/newtab/bookmarks/bookmark-folder-icon.ts</code>（形状与分层）和 <code>src/newtab/dom/folder-icon.ts</code>（形变与配色）。</footer>
+</div>
+
+<script>
+(() => {
+  // ---------- Color: the same tint rule as tintFolderColor ----------
+  const REF = [83, 147, 255];
+  const hex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  function tint(src, sel) {
+    const s = rgb(src);
+    return hex([0, 1, 2].map((i) => {
+      const amt = i === 2 ? (s[0] - REF[0]) / (255 - REF[0]) : (s[i] - REF[i]) / (255 - REF[i]);
+      return amt >= 0 ? sel[i] + (255 - sel[i]) * amt : sel[i] * (1 + amt);
+    }));
+  }
+  const LO = [[0, '#93BBFF'], [0.8845, '#81B0FF'], [0.8846, '#4389FF'], [1, '#97BEFF']];
+  const UP = [[0, '#CCDFFF'], [0.8845, '#B2CEFF'], [0.8846, '#89B5FF'], [1, '#97BEFF']];
+  const COLORS = [
+    { name: '蓝', hex: '#5393FF' },
+    { name: '紫', hex: '#8B5CF6' },
+    { name: '粉', hex: '#EC4899' },
+    { name: '红', hex: '#EF4444' },
+    { name: '橙', hex: '#F59E0B' },
+    { name: '绿', hex: '#22C55E' },
+    { name: '青', hex: '#14B8A6' },
+    { name: '石板', hex: '#64748B' },
+    { name: 'Mono 灰', hex: '#8E8E93', mono: true },
+    { name: 'Mono 墨', hex: '#3C3F46', mono: true }
+  ];
+
+  // ---------- Motion ----------
+  function bezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (t) => ((ax * t + bx) * t + cx) * t;
+    const sy = (t) => ((ay * t + by) * t + cy) * t;
+    const dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return 1;
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const e = sx(t) - x;
+        if (Math.abs(e) < 1e-5) break;
+        const d = dx(t);
+        if (Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      return sy(t);
+    };
+  }
+  const EASE = bezier(0.22, 1, 0.36, 1);
+  const DUR = 460;
+  let REDUCED = false;
+  try { REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function interp(a, b, t) {
+    if (typeof b === 'number') return typeof a === 'number' ? a + (b - a) * t : b;
+    if (Array.isArray(b)) return b.map((v, i) => interp(a ? a[i] : v, v, t));
+    if (b && typeof b === 'object') {
+      const o = {};
+      for (const k in b) o[k] = interp(a ? a[k] : undefined, b[k], t);
+      return o;
+    }
+    return t < 0.5 && a !== undefined ? a : b;
+  }
+
+  // ---------- Geometry ----------
+  // Grid: canvas 31×29 (viewBox 0 -2 31 29), live area x 4–27 / y 2–23, baseline y=23, center x=15.5.
+  const KR = 3.2;   // outer corner, same as the folder
+  const CR = 1.2;   // content corner
+  const f = (n) => +n.toFixed(3);
+  const R = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  // A polygon with rounded corners, always written with the same commands so two of them morph number by number.
+  function rp(pts, r) {
+    const n = pts.length;
+    let d = '';
+    for (let i = 0; i < n; i++) {
+      const v = pts[i], a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
+      const ri = Array.isArray(r) ? r[i] : r;
+      const la = Math.hypot(a[0] - v[0], a[1] - v[1]) || 1e-6;
+      const lb = Math.hypot(b[0] - v[0], b[1] - v[1]) || 1e-6;
+      const k1 = Math.min(ri, la / 2) / la, k2 = Math.min(ri, lb / 2) / lb;
+      d += (i ? 'L' : 'M') + f(v[0] + (a[0] - v[0]) * k1) + ' ' + f(v[1] + (a[1] - v[1]) * k1)
+        + 'Q' + f(v[0]) + ' ' + f(v[1]) + ' ' + f(v[0] + (b[0] - v[0]) * k2) + ' ' + f(v[1] + (b[1] - v[1]) * k2);
+    }
+    return d + 'Z';
+  }
+  const rr = (x, y, w, h, r) => rp(R(x, y, w, h), r);
+  const circ = (cx, cy, r) => `M${f(cx - r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx + r)} ${f(cy)}A${f(r)} ${f(r)} 0 1 0 ${f(cx - r)} ${f(cy)}Z`;
+  const poly = (pts) => 'M' + pts.map((p) => f(p[0]) + ' ' + f(p[1])).join('L');
+  // Text lines: x, first y, widths; rows 2.6 apart.
+  const lines = (x, y, widths) => widths.map((w, i) => `M${f(x)} ${f(y + i * 2.6)}H${f(x + w)}`).join('');
+  function star(r1, r2) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? r2 : r1;
+      pts.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    return rp(pts, 0.16);
+  }
+  function cross(a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy);
+    const l = (a[2] * a[2] - b[2] * b[2] + d * d) / (2 * d);
+    const h = Math.sqrt(Math.max(0, a[2] * a[2] - l * l));
+    const mx = a[0] + dx * l / d, my = a[1] + dy * l / d;
+    const p1 = [mx + h * dy / d, my - h * dx / d], p2 = [mx - h * dy / d, my + h * dx / d];
+    return p1[1] < p2[1] ? p1 : p2;
+  }
+  function arc(c, from, to) {
+    let dl = Math.atan2(to[1] - c[1], to[0] - c[0]) - Math.atan2(from[1] - c[1], from[0] - c[0]);
+    while (dl < 0) dl += Math.PI * 2;
+    return `A${f(c[2])} ${f(c[2])} 0 ${dl > Math.PI ? 1 : 0} 1 ${f(to[0])} ${f(to[1])}`;
+  }
+  function cloud(L, T, Rc) {
+    const s = [L[0], L[1] + L[2]], i1 = cross(L, T), i2 = cross(T, Rc), e = [Rc[0], Rc[1] + Rc[2]];
+    return `M${f(s[0])} ${f(s[1])}${arc(L, s, i1)}${arc(T, i1, i2)}${arc(Rc, i2, e)}Z`;
+  }
+  const at = (el, o) => { if (el) for (const k in o) el.setAttribute(k, o[k]); };
+
+  const G = { color: COLORS[0], slow: 1, all: false, size: 48 };
+
+  // ---------- Icons ----------
+  const OL = 'class="ol" data-t="stroke:#5393FF"';
+  const LINE = 'class="ln" data-t="stroke:#DDE8FB"';
+  const ACC = 'class="ln" stroke-width="1.2" data-t="stroke:#5393FF"';
+
+  const FOLDER_BACK_R = [KR, 1.4, 1.4, KR, KR, KR];
+  const TRASH_LID = rp([[4, 7.8], [4, 5.4], [12.5, 5.4], [12.5, 3.2], [18.5, 3.2], [18.5, 5.4], [27, 5.4], [27, 7.8]], [1, 1, 0.5, 0.8, 0.8, 0.5, 1, 1]);
+  const SYNC_UP = [[13.3, 20.4], [15.5, 18.2], [17.7, 20.4]];
+  const SYNC_DONE = [[13.1, 19.3], [14.8, 20.9], [17.9, 17.7]];
+  const SYNC_ERR = [[15.5, 17.4], [15.5, 19.4], [15.5, 19.4]];
+  const SYNC_TEXT = { idle: '空闲', syncing: '同步中…', done: '已同步', error: '有冲突' };
+  const totalMinutes = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes() + n.getSeconds() / 60; };
+  const sector = (base, sw, r) => {
+    const p = (a) => [15.5 + r * Math.sin(a * Math.PI / 180), 12.5 - r * Math.cos(a * Math.PI / 180)];
+    const a = p(base), b = p(base - sw);
+    return `M15.5 12.5L${f(a[0])} ${f(a[1])}A${r} ${r} 0 ${sw > 180 ? 1 : 0} 0 ${f(b[0])} ${f(b[1])}Z`;
+  };
+  const TAB = rr(0, 0, 13, 17, 2.6);
+  const tabCard = (u, ck, glass) => `<g data-n="t_${ck}" filter="${u.sh}">
+      ${glass ? `<g filter="${u.hi}"><path d="${TAB}" fill="${u.up(ck)}"/></g>` : `<path d="${TAB}" fill="${u.lo(ck)}"/>`}
+      <path d="${TAB}" class="ol" data-t="stroke:#5393FF" data-ck="${ck}"/>
+      <path d="${rr(1.8, 1.8, 5.4, 2.2, 1.1)}" fill="#fff"/>
+      <path d="${lines(1.8, 7.6, [9.4, 6.8, 8.4])}" class="ln" stroke="#fff" stroke-opacity="${glass ? '.95' : '.6'}"/>
+    </g>`;
+
+  const ICONS = [
+    {
+      id: 'folder', name: '书签文件夹', en: 'folder', origin: true,
+      use: '书签区和快捷方式里的文件夹，现有图标，作为参照',
+      trig: ['悬停', '拖入'], drop: true,
+      layers: '带标签的后片 · 白色文件 · 前片',
+      data: '每个文件夹各有颜色，跨设备同步',
+      svg: (u) => `
+        <g filter="${u.sh}"><path data-n="back" fill="${u.lo()}"/></g>
+        <path data-n="backO" ${OL}/>
+        <g data-n="file"><path d="${rr(0, 0, 17, 9, 1)}" fill="#fff"/><path d="M6 2H11" ${LINE}/></g>
+        <g filter="${u.hi}"><path data-n="front" fill="${u.up()}"/></g>
+        <path data-n="frontO" ${OL}/>`,
+      target: (s) => ({
+        back: s.h ? [[4, 3], [11.2, 3], [14.2, 6], [27, 6], [27.6, 23], [4.6, 23]] : [[4, 2], [11.2, 2], [14.2, 5], [27, 5], [27, 23], [4, 23]],
+        fx: s.h ? 7.9 : 7,
+        front: s.h ? [[6.8, 13], [29.3, 13], [27.6, 23], [5.4, 23]] : [[4, 5], [27, 5], [27, 23], [4, 23]],
+        fr: s.h ? 1.8 : KR
+      }),
+      draw(p, E) {
+        const b = rp(p.back, FOLDER_BACK_R), fr = rp(p.front, p.fr);
+        at(E.back, { d: b }); at(E.backO, { d: b });
+        at(E.file, { transform: `translate(${f(p.fx)} 9)` });
+        at(E.front, { d: fr }); at(E.frontO, { d: fr });
+      }
+    },
+    {
+      id: 'trash', name: '回收站', en: 'trash',
+      use: '拖动快捷方式或书签时出现的删除位',
+      trig: ['拖入', '松手'], drop: true,
+      layers: '桶内壁 · 被拖的网站卡片 · 桶身和盖子',
+      data: '松手后卡片落进桶里，盖子合上',
+      svg: (u) => `
+        <g filter="${u.sh}"><path data-n="back" fill="${u.lo()}"/></g>
+        <g data-n="card"><path d="${rr(0, 0, 10.4, 7.6, CR)}" fill="#fff"/><circle cx="2.6" cy="2.6" r="1.1" data-t="fill:#5393FF"/><path d="M4.9 2.6H8.4M1.8 5.2H7.2" ${LINE}/></g>
+        <g filter="${u.hi}"><path data-n="front" fill="${u.up()}"/></g>
+        <path data-n="frontO" ${OL}/>
+        <path data-n="ribs" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1" stroke-linecap="round"/>
+        <g data-n="lid"><g filter="${u.hi}"><path d="${TRASH_LID}" fill="${u.up()}"/></g><path d="${TRASH_LID}" ${OL}/></g>`,
+      target: (s) => {
+        const open = s.h && !s.drop;
+        return {
+          back: [[6, 7.8], [25, 7.8], [23.3, 23], [7.7, 23]],
+          front: open ? [[5.4, 9], [25.6, 9], [23.6, 23], [7.4, 23]] : [[5.6, 9.4], [25.4, 9.4], [23.6, 23], [7.4, 23]],
+          card: s.drop ? [10.3, 14, 4] : open ? [10.3, 3.6, -11] : [10.3, 12, 0],
+          lid: open ? [-0.4, -3.8, -10] : [0, 0, 0]
+        };
+      },
+      draw(p, E) {
+        at(E.back, { d: rp(p.back, [0.6, 0.6, 2.8, 2.8]) });
+        const fr = rp(p.front, [1.2, 1.2, 2.8, 2.8]);
+        at(E.front, { d: fr }); at(E.frontO, { d: fr });
+        const F = p.front, top = F[0][1] + 2.6;
+        at(E.ribs, { d: [0.3, 0.5, 0.7].map((k) => `M${f(F[0][0] + (F[1][0] - F[0][0]) * k)} ${f(top)}L${f(F[3][0] + (F[2][0] - F[3][0]) * k)} 20.4`).join('') });
+        at(E.card, { transform: `translate(${f(p.card[0])} ${f(p.card[1])}) rotate(${f(p.card[2])} 5.2 3.8)` });
+        at(E.lid, { transform: `translate(${f(p.lid[0])} ${f(p.lid[1])}) rotate(${f(p.lid[2])} 15.5 6.6)` });
+      },
+      onDrop(inst) {
+        inst.drop = true; go(inst);
+        setTimeout(() => { inst.drop = false; go(inst); }, 560 * G.slow);
+      }
+    },
+    {
+      id: 'split', name: '分屏打开', en: 'split view',
+      use: '搜索结果 ⌥↩，链接预览里的“移到分屏”',
+      trig: ['悬停'],
+      layers: '窗口 · 左右两页 · 分隔条',
+      data: '右页第一条蓝线是要打开的结果',
+      svg: (u) => `
+        <g filter="${u.sh}"><path d="${rr(4, 4, 23, 19, KR)}" fill="${u.lo()}"/></g>
+        <path d="${rr(4, 4, 23, 19, KR)}" ${OL}/>
+        <g fill="#fff" fill-opacity=".92"><circle cx="6.75" cy="6.3" r=".75"/><circle cx="8.95" cy="6.3" r=".75"/><circle cx="11.15" cy="6.3" r=".75"/></g>
+        <path data-n="L" fill="#fff"/><path data-n="Ll" ${LINE}/>
+        <g data-n="Rg"><path data-n="Rp" fill="#fff"/><path data-n="Ra" ${ACC}/><path data-n="Rl" ${LINE}/></g>
+        <g data-n="divG"><g filter="${u.hi}"><path data-n="div" fill="${u.up()}"/></g><path data-n="divO" ${OL}/></g>`,
+      target: (s) => ({
+        L: s.h ? [6, 8.6, 8.9, 12.4] : [6, 8.6, 19, 12.4],
+        Rr: s.h ? [16.1, 8.6, 8.9, 12.4, 1] : [25, 8.6, 0, 12.4, 0],
+        dv: s.h ? [7, 1] : [0, 0]
+      }),
+      draw(p, E) {
+        const [x, y, w, h] = p.L;
+        at(E.L, { d: rr(x, y, w, h, CR) });
+        const lw = Math.max(0, w - 3.6);
+        at(E.Ll, { d: lines(x + 1.8, 11.2, [lw, lw * 0.64, lw * 0.86]) });
+        const [rx, ry, rw, rh, op] = p.Rr;
+        at(E.Rp, { d: rr(rx, ry, rw, rh, CR) });
+        const rl = Math.max(0, rw - 3.6);
+        at(E.Ra, { d: lines(rx + 1.8, 11.2, [rl]) });
+        at(E.Rl, { d: lines(rx + 1.8, 13.8, [rl * 0.7, rl * 0.9]) });
+        at(E.Rg, { opacity: f(op) });
+        const hh = p.dv[0], dd = rr(15.5 - 0.6, 14.8 - hh / 2, 1.2, hh, 0.6);
+        at(E.div, { d: dd }); at(E.divO, { d: dd }); at(E.divG, { opacity: f(p.dv[1]) });
+      }
+    },
+    {
+      id: 'preview', name: '链接预览', en: 'link preview',
+      use: '在网页里悬停链接时的预览入口',
+      trig: ['悬停'],
+      layers: '页面 · 正文与链接 · 浮起的预览卡',
+      data: '预览卡从链接那一行长出来，页面同时让开',
+      svg: (u) => {
+        const card = rr(0, 0, 14.4, 11.4, 2.4);
+        return `
+        <g data-n="page">
+          <g filter="${u.sh}"><path d="${rr(5, 4, 21, 19, KR)}" fill="${u.lo()}"/></g>
+          <path d="${rr(5, 4, 21, 19, KR)}" ${OL}/>
+          <path d="${rr(7, 6, 17, 15, CR)}" fill="#fff"/>
+          <path d="${lines(9, 9.2, [11, 8.6, 12])}" ${LINE}/>
+          <path d="${lines(9, 17, [7])}" ${ACC}/>
+        </g>
+        <g data-n="card"><g filter="${u.sh}"><g filter="${u.hi}"><path d="${card}" fill="${u.up()}"/></g></g>
+          <path d="${card}" ${OL}/>
+          <path d="${rr(1.6, 1.6, 11.2, 5, 1)}" fill="#fff"/>
+          <path d="${lines(1.8, 9, [7.6])}" class="ln" stroke="#fff"/>
+        </g>`;
+      },
+      target: (s) => ({ page: s.h ? -1.4 : 0, card: s.h ? [13.8, 0.8, 1, 1] : [9, 16.4, 0.1, 0] }),
+      draw(p, E) {
+        at(E.page, { transform: `translate(${f(p.page)} 0)` });
+        const [x, y, sc, op] = p.card;
+        at(E.card, { transform: `translate(${f(x)} ${f(y)}) scale(${f(Math.max(0.001, sc))})`, opacity: f(op) });
+      }
+    },
+    {
+      id: 'tabs', name: '标签组', en: 'tab group',
+      use: '把书签文件夹作为标签组打开',
+      trig: ['悬停', '拖入'], drop: true,
+      keys: ['c', 'c2', 'c3'],
+      layers: '三张卡，后两张取分组颜色',
+      data: '角标是组里的标签数，拖入一个就加一',
+      ctl: () => `<span class="label">标签数</span><button class="seg" data-act="dec" aria-label="减少一个标签">−</button><output data-out>5</output><button class="seg" data-act="inc" aria-label="增加一个标签">+</button>`,
+      init: (m) => { m.count = 5; },
+      svg: (u) => `
+        ${tabCard(u, 'c3', false)}
+        ${tabCard(u, 'c2', false)}
+        ${tabCard(u, 'c', true)}
+        <g data-n="badge" filter="${u.sh}"><circle r="3.4" fill="#fff"/><circle r="3.4" ${OL}/><text data-n="cnt" text-anchor="middle" y="1.35" font-size="3.8" font-weight="700" data-t="fill:#4389FF">5</text></g>`,
+      target: (s) => ({
+        t3: s.h ? [5.4, 5.2, -14] : [11.2, 2, 0],
+        t2: s.h ? [9, 3, 0] : [9.4, 4, 0],
+        t1: s.h ? [12.6, 5.2, 14] : [7.6, 6, 0],
+        badge: s.h ? [25.4, 19.6, 1] : [20.6, 20.4, 0.9],
+        c2: rgb('#F59E0B'), c3: rgb('#EC4899')
+      }),
+      draw(p, E, inst) {
+        [['t_c3', p.t3], ['t_c2', p.t2], ['t_c', p.t1]].forEach(([n, v]) => at(E[n], { transform: `translate(${f(v[0])} ${f(v[1])}) rotate(${f(v[2])} 6.5 17)` }));
+        at(E.badge, { transform: `translate(${f(p.badge[0])} ${f(p.badge[1])}) scale(${f(p.badge[2])})` });
+        const c = String(inst.model.count);
+        if (E.cnt.textContent !== c) E.cnt.textContent = c;
+      },
+      act(m, a, el, ui) {
+        m.count = Math.max(1, Math.min(99, m.count + (a === 'inc' ? 1 : -1)));
+        ui.querySelector('[data-out]').textContent = m.count;
+      },
+      onDrop(inst, ui) { inst.icon.act(inst.model, 'inc', null, ui); refresh('tabs'); inst.drag = false; go(inst); }
+    },
+    {
+      id: 'sync', name: 'WebDAV 同步', en: 'sync',
+      use: '设置页的同步状态，新标签页角落的同步提示',
+      trig: ['状态', '悬停'],
+      layers: '云 · 文件 · 带状态符号的前片',
+      data: '空闲、同步中、已同步、有冲突；Mono 下只靠符号区分',
+      ctl: () => `<button class="seg" data-act="sync">同步</button><button class="seg" data-act="error">模拟冲突</button><button class="seg" data-act="reset">复位</button><span class="st" data-st>空闲</span>`,
+      init: (m) => { m.sync = 'idle'; m.phase = 0; },
+      svg: (u) => `
+        <g filter="${u.sh}"><path data-n="cloud" fill="${u.lo()}"/></g>
+        <path data-n="cloudO" ${OL}/>
+        <g data-n="doc"><path d="${rr(0, 0, 7, 8.4, CR)}" fill="#fff"/><path d="${lines(1.6, 2.4, [3.8, 2.8])}" ${LINE}/></g>
+        <g filter="${u.hi}"><path d="${rp(R(4, 15.6, 23, 7.4), [1.6, 1.6, KR, KR])}" fill="${u.up()}"/></g>
+        <path d="${rp(R(4, 15.6, 23, 7.4), [1.6, 1.6, KR, KR])}" ${OL}/>
+        <path data-n="glyph" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle data-n="dot" cx="15.5" cy="21.3" r=".8" fill="#fff"/>`,
+      target: (s, C) => {
+        const st = s.sync, puff = st === 'syncing' && s.phase ? 0.5 : 0;
+        return {
+          L: [9.8, 16.2, 5 + puff], T: [15.8, 11, 6.6 + puff], Rc: [21.6, 16.4, 4.8 + puff],
+          doc: st === 'syncing' ? [12, s.phase ? 7.8 : 10.4, 0] : st === 'done' ? [12, 11, 0] : st === 'error' ? [12, 11.8, -8] : s.h ? [12, 9.6, 0] : [12, 12.4, 0],
+          glyph: st === 'done' ? SYNC_DONE : st === 'error' ? SYNC_ERR : SYNC_UP,
+          dot: st === 'error' ? 1 : 0,
+          c: st === 'done' ? rgb('#22C55E') : st === 'error' ? rgb('#EF4444') : C
+        };
+      },
+      draw(p, E) {
+        const d = cloud(p.L, p.T, p.Rc);
+        at(E.cloud, { d }); at(E.cloudO, { d });
+        at(E.doc, { transform: `translate(${f(p.doc[0])} ${f(p.doc[1])}) rotate(${f(p.doc[2])} 3.5 4.2)` });
+        at(E.glyph, { d: poly(p.glyph) });
+        at(E.dot, { opacity: f(p.dot) });
+      },
+      act(m, a, el, ui) {
+        clearInterval(m.loop); clearTimeout(m.done);
+        m.phase = 0;
+        const status = () => { ui.querySelector('[data-st]').textContent = SYNC_TEXT[m.sync]; };
+        if (a === 'sync') {
+          m.sync = 'syncing';
+          m.loop = setInterval(() => { m.phase = m.phase ? 0 : 1; refresh('sync'); }, 640 * G.slow);
+          m.done = setTimeout(() => { clearInterval(m.loop); m.phase = 0; m.sync = 'done'; status(); refresh('sync'); }, 2700 * G.slow);
+        } else {
+          m.sync = a === 'error' ? 'error' : 'idle';
+        }
+        status();
+      }
+    },
+    {
+      id: 'recent', name: '最近访问', en: 'recent',
+      use: '最近区的标题，历史记录入口',
+      trig: ['实时', '悬停'],
+      layers: '表盘 · 白色表面 · 回看扇区与指针',
+      data: '指针就是现在的时间，悬停倒拨 20 分钟',
+      ctl: () => `<span class="label">现在</span><span class="st" data-clock>--:--</span>`,
+      svg: (u) => `
+        <g filter="${u.sh}"><path d="${circ(15.5, 12.5, 10.5)}" fill="${u.lo()}"/></g>
+        <path d="${circ(15.5, 12.5, 10.5)}" ${OL}/>
+        <path d="${circ(15.5, 12.5, 8.3)}" fill="#fff"/>
+        <path d="M15.5 5V6M23 12.5H22M15.5 20V19M8 12.5H9" class="ln" data-t="stroke:#B2CEFF"/>
+        <g filter="${u.hi}"><path data-n="sweep" fill="${u.up()}"/></g>
+        <path data-n="hh" d="M15.5 12.5V8.5" stroke-width="1.6" stroke-linecap="round" data-t="stroke:#4389FF"/>
+        <path data-n="mh" d="M15.5 12.5V6.4" stroke-width="1.2" stroke-linecap="round" data-t="stroke:#5393FF"/>
+        <circle cx="15.5" cy="12.5" r="1.2" data-t="fill:#4389FF"/><circle cx="15.5" cy="12.5" r=".45" fill="#fff"/>`,
+      target: (s) => {
+        const m = totalMinutes(), sw = s.h ? 120 : 0;
+        return { base: m * 6, sw, mA: m * 6 - sw, hA: m / 2 - sw / 12 };
+      },
+      draw(p, E) {
+        at(E.sweep, { d: sector(p.base, Math.max(0, p.sw), 7.2) });
+        at(E.mh, { transform: `rotate(${f(p.mA)} 15.5 12.5)` });
+        at(E.hh, { transform: `rotate(${f(p.hA)} 15.5 12.5)` });
+      }
+    },
+    {
+      id: 'wallpaper', name: '壁纸', en: 'wallpaper',
+      use: '壁纸面板入口',
+      trig: ['悬停'],
+      layers: '相框 · 天空与太阳 · 前后两层山',
+      data: '日出加两层山反向错开；实际使用时主色可取自壁纸',
+      svg: (u) => {
+        const frame = rr(4, 4, 23, 19, KR), sky = rr(6, 6, 19, 15, CR);
+        return `
+        <clipPath id="${u.id('sky')}"><path d="${sky}"/></clipPath>
+        <g filter="${u.sh}"><path d="${frame}" fill="${u.lo()}"/></g>
+        <path d="${frame}" ${OL}/>
+        <g clip-path="url(#${u.id('sky')})">
+          <path d="${sky}" fill="${u.up()}"/>
+          <circle data-n="glow" cx="20" r="3.8" fill="#fff" fill-opacity=".35"/>
+          <circle data-n="sun" cx="20" r="2.4" fill="#fff"/>
+          <path data-n="m1" d="${rp([[3, 21.6], [3, 16.6], [10.6, 11.2], [15.4, 15.2], [19.2, 12.6], [28, 19.6], [28, 21.6]], [0, 0, 1.2, 0.8, 1.2, 0, 0])}" fill="${u.lo()}"/>
+          <path data-n="m2" d="${rp([[3, 21.6], [3, 18.8], [9.4, 16], [14.8, 19], [20.4, 15.6], [28, 19.2], [28, 21.6]], [0, 0, 1, 0.8, 1, 0, 0])}" fill="#fff"/>
+        </g>`;
+      },
+      target: (s) => ({ sun: s.h ? 10 : 16.2, m1: s.h ? -1.4 : 0, m2: s.h ? 1.2 : 0 }),
+      draw(p, E) {
+        at(E.sun, { cy: f(p.sun) }); at(E.glow, { cy: f(p.sun) });
+        at(E.m1, { transform: `translate(${f(p.m1)} 0)` });
+        at(E.m2, { transform: `translate(${f(p.m2)} 0)` });
+      }
+    },
+    {
+      id: 'bookmark', name: '加入书签', en: 'bookmark',
+      use: '链接菜单和页面右键里的“加入书签”',
+      trig: ['悬停', '点击'],
+      layers: '页面 · 正文 · 书签带',
+      data: '加入后书签带填满并多出一颗星',
+      ctl: () => `<button class="seg" data-act="save" aria-pressed="false">加入书签</button>`,
+      tap: 'save',
+      svg: (u) => `
+        <g filter="${u.sh}"><path d="${rr(5, 2, 21, 21, KR)}" fill="${u.lo()}"/></g>
+        <path d="${rr(5, 2, 21, 21, KR)}" ${OL}/>
+        <path d="${rr(7, 4, 17, 17, CR)}" fill="#fff"/>
+        <path d="${lines(9, 7.4, [5.4])}" ${ACC}/>
+        <path d="${lines(9, 12.6, [13, 9.6, 11.6])}" ${LINE}/>
+        <g filter="${u.hi}"><path data-n="rib" fill="${u.up()}"/></g>
+        <path data-n="ribF" data-t="fill:#5393FF"/>
+        <path data-n="ribO" ${OL}/>
+        <path data-n="star" d="${star(1.5, 0.68)}" fill="#fff"/>`,
+      target: (s) => ({
+        yb: s.saved ? (s.h ? 14 : 13) : (s.h ? 12 : 9.4),
+        fo: s.saved ? 1 : 0
+      }),
+      draw(p, E) {
+        const y = p.yb, d = rp([[18.4, 2], [23, 2], [23, y], [20.7, y - 2], [18.4, y]], [0.5, 0.5, 0.4, 0.5, 0.4]);
+        at(E.rib, { d }); at(E.ribO, { d }); at(E.ribF, { d, opacity: f(p.fo) });
+        at(E.star, { transform: `translate(20.7 ${f(2 + (y - 4) * 0.5)}) scale(${f(Math.max(0.001, p.fo))})` });
+      },
+      act(m, a, el, ui) {
+        m.saved = !m.saved;
+        const b = ui.querySelector('[data-act="save"]');
+        b.setAttribute('aria-pressed', String(m.saved));
+        b.textContent = m.saved ? '已加入' : '加入书签';
+      }
+    },
+    {
+      id: 'progress', name: '追更进度', en: 'progress',
+      use: '最近区里固定的剧集或章节',
+      trig: ['数据', '悬停'],
+      layers: '封套 · 集数卡 · 前片',
+      data: '前片高度就是看到的进度，悬停压下前片露出集数',
+      ctl: () => `<label class="label" for="ep-progress">第几集</label><input type="range" id="ep-progress" min="0" max="24" value="12" data-act="ep"><button class="seg" data-act="next">+1 集</button>`,
+      init: (m) => { m.ep = 12; },
+      svg: (u) => `
+        <g filter="${u.sh}"><path d="${rr(4, 2, 23, 21, KR)}" fill="${u.lo()}"/></g>
+        <path d="${rr(4, 2, 23, 21, KR)}" ${OL}/>
+        <path d="${rr(6, 4, 19, 15, CR)}" fill="#fff"/>
+        <text x="15.5" y="11.8" text-anchor="middle"><tspan data-n="ep" font-size="6" font-weight="700" data-t="fill:#4389FF">12</tspan><tspan font-size="2.6" dx=".5" data-t="fill:#97BEFF">/ 24</tspan></text>
+        <g filter="${u.hi}"><path data-n="front" fill="${u.up()}"/></g>
+        <path data-n="frontO" ${OL}/>
+        <text data-n="pct" x="15.5" y="21.4" text-anchor="middle" font-size="2.6" font-weight="600" fill="#fff">50%</text>`,
+      target: (s) => {
+        const yt = 21 - 11.6 * (s.ep / 24), yh = Math.min(20.2, yt + 6);
+        const top = s.h ? yh : yt;
+        return {
+          front: s.h ? [[6.6, yh], [29, yh], [27.6, 23], [5.4, 23]] : [[4, yt], [27, yt], [27, 23], [4, 23]],
+          fr: s.h ? 1.6 : KR,
+          po: !s.h && 23 - top > 3.4 ? 1 : 0
+        };
+      },
+      draw(p, E, inst) {
+        const d = rp(p.front, p.fr);
+        at(E.front, { d }); at(E.frontO, { d });
+        at(E.pct, { opacity: f(p.po) });
+        const ep = String(inst.model.ep), pct = Math.round(inst.model.ep / 24 * 100) + '%';
+        if (E.ep.textContent !== ep) E.ep.textContent = ep;
+        if (E.pct.textContent !== pct) E.pct.textContent = pct;
+      },
+      act(m, a, el, ui) {
+        m.ep = a === 'next' ? Math.min(24, m.ep + 1) : Number(el.value);
+        ui.querySelector('[data-act="ep"]').value = m.ep;
+      }
+    },
+    {
+      id: 'search', name: '搜索', en: 'search',
+      use: '⌘K 搜索框，新标签页的搜索入口',
+      trig: ['悬停'],
+      layers: '页面 · 正文 · 放大镜',
+      data: '镜片里是同一页放大 1.5 倍，停在命中的那一行',
+      svg: (u) => `
+        <g filter="${u.sh}"><path d="${rr(4, 3, 19, 20, KR)}" fill="${u.lo()}"/></g>
+        <path d="${rr(4, 3, 19, 20, KR)}" ${OL}/>
+        <g id="${u.id('pg')}"><path d="${rr(6, 5, 15, 16, CR)}" fill="#fff"/>
+          <path d="${lines(8, 8.6, [10])}${lines(8, 13.8, [11, 7.4])}" ${LINE}/>
+          <path d="${lines(8, 11.2, [6.6])}" ${ACC}/></g>
+        <clipPath id="${u.id('lens')}"><circle data-n="clip" r="4.4"/></clipPath>
+        <g clip-path="url(#${u.id('lens')})"><use data-n="mag" href="#${u.id('pg')}"/></g>
+        <g data-n="lens">
+          <circle r="4.4" fill="${u.up()}" fill-opacity=".22"/>
+          <circle r="4.4" fill="none" stroke="#fff" stroke-width="1.2"/>
+          <circle r="5" ${OL}/>
+          <path d="M3.6 3.6L6.6 6.6" stroke-width="2.2" stroke-linecap="round" data-t="stroke:#4389FF"/>
+        </g>`,
+      target: (s) => ({ lens: s.h ? [12.4, 11.2] : [19.4, 15.6] }),
+      draw(p, E) {
+        const [x, y] = p.lens;
+        at(E.clip, { cx: f(x), cy: f(y) });
+        at(E.mag, { transform: `translate(${f(x)} ${f(y)}) scale(1.5) translate(${f(-x)} ${f(-y)})` });
+        at(E.lens, { transform: `translate(${f(x)} ${f(y)})` });
+      }
+    }
+  ];
+
+  // ---------- Instances ----------
+  const grad = (id, stops, ck) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">${stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}" data-t="stop-color:${c}" data-ck="${ck}"/>`).join('')}</linearGradient>`;
+  const defs = (k, keys) => `<defs>
+      ${keys.map((ck) => grad(`lo-${k}-${ck}`, LO, ck) + grad(`up-${k}-${ck}`, UP, ck)).join('')}
+      <filter id="sh-${k}" x="-40%" y="-40%" width="180%" height="190%" color-interpolation-filters="sRGB">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/><feOffset dy="2" result="o"/>
+        <feColorMatrix in="o" type="matrix" data-sh="c" values="0 0 0 0 0.54 0 0 0 0 0.71 0 0 0 0 1 0 0 0 0.21 0"/>
+        <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="hi-${k}" x="-10%" y="-10%" width="120%" height="130%" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="a"/>
+        <feOffset in="a" dy="0.8"/><feGaussianBlur stdDeviation="0.7"/>
+        <feComposite in2="a" operator="arithmetic" k2="-1" k3="1"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.72 0"/>
+        <feBlend in2="SourceGraphic" mode="normal"/>
+      </filter>
+    </defs>`;
+  const GUIDE = `<g class="guide" aria-hidden="true"><rect x="4" y="2" width="23" height="21"/><rect x="6" y="4" width="19" height="17" stroke-dasharray="2 2"/><circle cx="15.5" cy="12.5" r="10.5"/><path d="M-1 23H32M15.5 -2V27"/></g>`;
+  const VB = 'viewBox="0 -2 31 29"';
+  const H = (w) => f(w * 29 / 31);
+
+  const MODELS = {};
+  const BY_ICON = {};
+  const UI = {};
+  let counter = 0;
+  ICONS.forEach((icon) => { MODELS[icon.id] = {}; BY_ICON[icon.id] = []; if (icon.init) icon.init(MODELS[icon.id]); });
+
+  function render(inst) {
+    const p = inst.cur;
+    inst.icon.draw(p, inst.E, inst);
+    for (const ck of inst.keys) {
+      const col = p[ck];
+      const key = hex(col);
+      if (inst.painted[ck] === key) continue;
+      inst.painted[ck] = key;
+      for (const [el, attr, src] of inst.tints[ck]) el.setAttribute(attr, tint(src, col));
+      if (ck === 'c') {
+        const sh = rgb(tint('#8AB6FF', col));
+        inst.shadow.setAttribute('values', `0 0 0 0 ${f(sh[0] / 255)} 0 0 0 0 ${f(sh[1] / 255)} 0 0 0 0 ${f(sh[2] / 255)} 0 0 0 0.21 0`);
+      }
+    }
+  }
+  function targetOf(inst) {
+    const s = Object.assign({}, inst.model, { h: Boolean(inst.hover || inst.pin || inst.drag || G.all), drop: inst.drop });
+    const col = inst.fixed || G.color, C = rgb(col.hex);
+    const t = inst.icon.target(s, C);
+    if (!t.c) t.c = C;
+    if (col.mono) inst.keys.forEach((ck) => { t[ck] = C; });
+    return t;
+  }
+  // Always starts from what is on screen, so a reversal mid-way carries on smoothly.
+  function go(inst) {
+    const to = targetOf(inst);
+    cancelAnimationFrame(inst.raf);
+    const dur = REDUCED ? 0 : DUR * G.slow;
+    if (!dur) { inst.cur = to; render(inst); return; }
+    const from = inst.cur, t0 = performance.now();
+    const tick = (now) => {
+      const t = Math.min(1, (now - t0) / dur);
+      inst.cur = interp(from, to, EASE(t));
+      render(inst);
+      if (t < 1) inst.raf = requestAnimationFrame(tick);
+    };
+    inst.raf = requestAnimationFrame(tick);
+  }
+  function refresh(id) { BY_ICON[id].forEach(go); }
+
+  // Builds one live icon; `fixed` pins its color, otherwise it follows the chosen color.
+  function makeIcon(icon, fixed, size, extra) {
+    const k = 'i' + (counter++);
+    const keys = icon.keys || ['c'];
+    const u = {
+      lo: (ck = 'c') => `url(#lo-${k}-${ck})`,
+      up: (ck = 'c') => `url(#up-${k}-${ck})`,
+      sh: `url(#sh-${k})`, hi: `url(#hi-${k})`,
+      id: (n) => `${n}-${k}`
+    };
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 -2 31 29');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', H(size));
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = defs(k, keys) + `<g id="root-${k}">${icon.svg(u)}</g>` + (extra || '');
+    const E = {};
+    svg.querySelectorAll('[data-n]').forEach((el) => { E[el.dataset.n] = el; });
+    const tints = {};
+    keys.forEach((ck) => { tints[ck] = []; });
+    svg.querySelectorAll('[data-t]').forEach((el) => {
+      const [attr, src] = el.dataset.t.split(':');
+      (tints[el.dataset.ck || 'c'] || tints.c).push([el, attr, src]);
+    });
+    const inst = { icon, k, svg, E, keys, tints, fixed, model: MODELS[icon.id], painted: {}, shadow: svg.querySelector('[data-sh]'), raf: 0 };
+    inst.cur = targetOf(inst);
+    render(inst);
+    BY_ICON[icon.id].push(inst);
+    return inst;
+  }
+  // Hover, focus, tap and drop on a cell drive `inst`.
+  function bindCell(cell, inst) {
+    const icon = inst.icon;
+    cell.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { inst.hover = true; go(inst); } });
+    cell.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { inst.hover = false; go(inst); } });
+    cell.addEventListener('focus', () => { inst.hover = true; go(inst); });
+    cell.addEventListener('blur', () => { inst.hover = false; go(inst); });
+    const tap = () => {
+      if (icon.tap) { icon.act(MODELS[icon.id], icon.tap, null, UI[icon.id]); refresh(icon.id); return true; }
+      return false;
+    };
+    cell.addEventListener('click', (e) => {
+      if (tap()) return;
+      if (e.pointerType && e.pointerType !== 'mouse') { inst.pin = !inst.pin; go(inst); }
+    });
+    cell.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      if (!tap()) { inst.pin = !inst.pin; go(inst); }
+    });
+  }
+  function bindDrop(cell, inst) {
+    let depth = 0;
+    cell.classList.add('droppable');
+    cell.addEventListener('dragenter', (e) => { e.preventDefault(); if (depth++ === 0) { inst.drag = true; go(inst); } });
+    cell.addEventListener('dragover', (e) => { e.preventDefault(); });
+    cell.addEventListener('dragleave', () => { if (--depth <= 0) { depth = 0; inst.drag = false; go(inst); } });
+    cell.addEventListener('drop', (e) => {
+      e.preventDefault(); depth = 0; inst.drag = false;
+      if (inst.icon.onDrop) inst.icon.onDrop(inst, UI[inst.icon.id]); else go(inst);
+    });
+  }
+
+  // ---------- Board ----------
+  const board = document.getElementById('board');
+  const div = (cls, html) => { const d = document.createElement('div'); d.className = cls; if (html != null) d.innerHTML = html; return d; };
+  const heroes = {};
+  const section = (t) => board.appendChild(div('section', t));
+  const rowLabel = (main, sub) => board.appendChild(div('rowlabel', `<b>${main}</b>${sub ? `<span>${sub}</span>` : ''}`));
+
+  section('悬停 · 拖入 · 点击');
+  const heroLabel = div('rowlabel', '');
+  board.appendChild(heroLabel);
+  ICONS.forEach((icon) => {
+    const cell = div('cell hero');
+    cell.tabIndex = 0;
+    cell.setAttribute('role', 'img');
+    cell.setAttribute('aria-label', `${icon.name}图标，悬停或聚焦查看动画`);
+    const inst = makeIcon(icon, null, G.size, GUIDE);
+    heroes[icon.id] = inst;
+    cell.appendChild(inst.svg);
+    cell.appendChild(div('nm', `${icon.name}<small>${icon.origin ? '参照' : icon.en}</small>`));
+    bindCell(cell, inst);
+    if (icon.drop) bindDrop(cell, inst);
+    board.appendChild(cell);
+  });
+  function setHeroLabel() { heroLabel.innerHTML = `<b>${G.size}px</b><span>${G.color.name}</span>`; }
+  setHeroLabel();
+
+  board.appendChild(div('rule'));
+  section('实际尺寸');
+  [32, 24, 20].forEach((sz) => {
+    rowLabel(sz + 'px', '');
+    ICONS.forEach((icon) => {
+      const cell = div('cell size');
+      cell.innerHTML = `<svg width="${sz}" height="${H(sz)}" ${VB} aria-hidden="true"><use href="#root-${heroes[icon.id].k}"/></svg>`;
+      bindCell(cell, heroes[icon.id]);
+      board.appendChild(cell);
+    });
+  });
+
+  board.appendChild(div('rule'));
+  section('颜色 · 28px');
+  COLORS.forEach((col) => {
+    rowLabel(col.name, col.hex);
+    ICONS.forEach((icon) => {
+      const cell = div('cell tone');
+      const inst = makeIcon(icon, col, 28);
+      cell.appendChild(inst.svg);
+      bindCell(cell, inst);
+      board.appendChild(cell);
+    });
+  });
+
+  // ---------- Specs ----------
+  const specs = document.getElementById('specs');
+  ICONS.forEach((icon) => {
+    const el = document.createElement('article');
+    el.className = 'spec';
+    el.innerHTML = `
+      <div class="spec-head">
+        <div class="ico"><svg width="30" height="${H(30)}" ${VB} aria-hidden="true"><use href="#root-${heroes[icon.id].k}"/></svg></div>
+        <div><h3>${icon.name}<span>${icon.en}</span></h3><div class="chips">${icon.trig.map((t) => `<span>${t}</span>`).join('')}</div></div>
+      </div>
+      <dl>
+        <dt>用在</dt><dd>${icon.use}</dd>
+        <dt>分层</dt><dd>${icon.layers}</dd>
+        <dt>动态</dt><dd>${icon.data}</dd>
+      </dl>
+      ${icon.ctl ? `<div class="ctl">${icon.ctl()}</div>` : ''}`;
+    UI[icon.id] = el;
+    specs.appendChild(el);
+    el.querySelectorAll('[data-act]').forEach((c) => {
+      c.addEventListener(c.tagName === 'INPUT' ? 'input' : 'click', () => {
+        icon.act(MODELS[icon.id], c.dataset.act, c, el);
+        refresh(icon.id);
+      });
+    });
+  });
+
+  // ---------- Live clock ----------
+  const clockOut = UI.recent.querySelector('[data-clock]');
+  function tickClock() {
+    const n = new Date();
+    clockOut.textContent = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+    BY_ICON.recent.forEach((inst) => { if (!inst.hover) go(inst); });
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+
+  // ---------- Global controls ----------
+  const all = () => ICONS.forEach((icon) => refresh(icon.id));
+  const pressed = (group, btn) => group.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+  const sw = document.getElementById('swatches');
+  COLORS.forEach((col, i) => {
+    const b = document.createElement('button');
+    b.className = 'swatch';
+    b.style.setProperty('--c', col.hex);
+    b.title = `${col.name} ${col.hex}`;
+    b.setAttribute('aria-label', `主色 ${col.name}`);
+    b.setAttribute('aria-pressed', String(i === 0));
+    b.addEventListener('click', () => {
+      G.color = col;
+      document.documentElement.style.setProperty('--pick', col.hex);
+      pressed([...sw.children], b);
+      setHeroLabel();
+      all();
+    });
+    sw.appendChild(b);
+  });
+  const canvas = document.getElementById('canvas');
+  const bgBtns = [...document.querySelectorAll('[data-bg]')].filter((b) => b.tagName === 'BUTTON');
+  bgBtns.forEach((b) => b.addEventListener('click', () => { canvas.dataset.bg = b.dataset.bg; pressed(bgBtns, b); }));
+  const sizeBtns = [...document.querySelectorAll('[data-size]')];
+  sizeBtns.forEach((b) => b.addEventListener('click', () => {
+    G.size = Number(b.dataset.size);
+    pressed(sizeBtns, b);
+    Object.values(heroes).forEach((inst) => { inst.svg.setAttribute('width', G.size); inst.svg.setAttribute('height', H(G.size)); });
+    board.style.setProperty('--s', G.size + 'px');
+    setHeroLabel();
+  }));
+  board.style.setProperty('--s', G.size + 'px');
+  const guides = document.getElementById('guides');
+  guides.addEventListener('click', () => {
+    const on = canvas.dataset.guides !== 'on';
+    canvas.dataset.guides = on ? 'on' : 'off';
+    guides.setAttribute('aria-pressed', String(on));
+  });
+  const slow = document.getElementById('slow');
+  slow.addEventListener('click', () => { G.slow = G.slow === 1 ? 4 : 1; slow.setAttribute('aria-pressed', String(G.slow > 1)); });
+  const allBtn = document.getElementById('all');
+  allBtn.addEventListener('click', () => { G.all = !G.all; allBtn.setAttribute('aria-pressed', String(G.all)); all(); });
+  document.getElementById('chip').addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', 'lumno');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+})();
+</script>
+</body>
+</html>

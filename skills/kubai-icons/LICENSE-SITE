@@ -1,0 +1,26 @@
+Kubai Icons Website License
+
+Copyright (c) 2026 Kubai087. All rights reserved.
+
+This notice covers the website in site/, the build and check tools in tools/, the
+tests in tests/, the documentation in docs/, and the text, design and layout of the
+site published at icons.kubai.design (together, the "Website").
+
+You may read the Website's source and fork this repository on GitHub, as GitHub's
+Terms of Service allow, and run the Website locally to prepare a contribution to this
+repository. No other permission is granted: you may not copy, change, publish, host
+or redistribute the Website, in whole or in part, without written permission from
+Kubai087.
+
+This notice does not cover:
+
+- the icons and the packages kubai-icons, kubai-icons-react, kubai-icons-vue and
+  kubai-icons-static, which are under the MIT License in LICENSE-ICONS, including
+  where they appear on the Website;
+- third-party dependencies, which remain under their own licences.
+
+By submitting a contribution to the Website, you grant Kubai087 a perpetual,
+worldwide, royalty-free, non-exclusive licence to use, change, distribute and
+sublicense that contribution.
+
+The Website is provided "as is", without warranty of any kind.

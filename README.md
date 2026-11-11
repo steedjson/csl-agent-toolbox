@@ -176,6 +176,10 @@ Anthropic 的前端视觉设计 Skill：从具体主题确定设计方向，规�
 
 网页动效工具包：CSS transitions、关键帧、微交互、加载状态、页面过渡与滚动动画，包含 Tailwind、Framer Motion、性能和减少动态效果偏好的参考。上游为 [OneWave-AI/claude-skills](https://github.com/OneWave-AI/claude-skills/tree/main/css-animation-creator)（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留仓库根目录的 `LICENSE`。
 
+#### [kubai-icons](./skills/kubai-icons/)
+
+动态图标绘制：给产品画一套风格统一的功能图标（后片/内容/前片三层、外描边、单主色推导全部颜色、悬停时做"物体本来的动作"），自带引擎、66 个范例图标、headless Chrome 自检脚本与静态 SVG 导出；完整图标库（2800+，MIT）走 npm 包 `kubai-icons-*` 或 [icons.kubai.design](https://icons.kubai.design/)。上游为 [kubai087/kubai-icons](https://github.com/kubai087/kubai-icons)（Kubai Icons License，source-available），按 `skills.json` 的 `upstream` 固定 commit 同步。**该许可只允许原样未修改副本再分发：本目录永远不做本地修改**，同步遇到冲突时以上游为准整体覆盖；网站代码（`site/` 等）不在再分发范围内，已通过 `exclude` 排除。
+
 #### [antd-component-lookup](./skills/antd-component-lookup/)
 
 查询 Ant Design React 组件的 API、默认值、类型和用法示例，通过官网组件页面与 `llms.txt` / `llms-full.txt` 获取文档。上游为 [ant-design/ant-design](https://github.com/ant-design/ant-design) 的 `public/.well-known/agent-skills/antd-component-lookup`（MIT），按 `skills.json` 的 `upstream` 固定 commit 同步；随技能保留该版本仓库根目录的 `LICENSE`。

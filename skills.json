@@ -1610,6 +1610,67 @@
         "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       }
+    },
+    {
+      "name": "kubai-icons",
+      "category": "browser-and-ui",
+      "description": "生成一套风格统一的功能图标，可以交付悬停时会形变的动态版（SVG + JS），也可以导出静态 SVG 文件，沿用 Lumno 书签文件夹图标的构造：后片、内容、前片分层，外描边，所有颜色从一个主色推导，两组关键帧的悬停动效，可切换色板。用户要做图标、功能图标、动态图标、静态 SVG 图标、icon set、带 hover 动效的图标，或要往这套图标里加新图标时使用。",
+      "files": [
+        "LICENSE",
+        "LICENSE-ICONS",
+        "LICENSE-SITE",
+        "LICENSING.md",
+        "PROMPT.md",
+        "SKILL.md",
+        "assets/gallery.png",
+        "assets/hover.webp",
+        "assets/og.png",
+        "assets/palettes.webp",
+        "assets/skill.webp",
+        "assets/social.png",
+        "history/01-board.html",
+        "history/02-twelve.html",
+        "history/03-system.html",
+        "history/README.md",
+        "index.html",
+        "scripts/check.mjs",
+        "scripts/export.mjs",
+        "scripts/media.mjs",
+        "scripts/pack.mjs",
+        "src/app.js",
+        "src/engine.js",
+        "src/icons.js"
+      ],
+      "upstream": {
+        "type": "github",
+        "repo": "kubai087/kubai-icons",
+        "path": ".",
+        "exclude": [
+          "site/",
+          "tools/",
+          "tests/",
+          "docs/",
+          "functions/",
+          "icons/",
+          "badges/",
+          "packages/",
+          ".changeset/",
+          ".github/",
+          ".editorconfig",
+          ".gitattributes",
+          ".gitignore",
+          "README.md",
+          "CODE_OF_CONDUCT.md",
+          "CONTRIBUTING.md",
+          "SECURITY.md",
+          "package.json",
+          "package-lock.json",
+          "vitest.config.js"
+        ],
+        "ref": "25c5bdc5ea9ebd57f4f9a96434e4605a4ba23f94",
+        "synced_at": "2026-11-11",
+        "license": "Kubai Icons License (source-available; redistribute exact unmodified copies only, no derivative versions)"
+      }
     }
   ],
   "plugins": [
