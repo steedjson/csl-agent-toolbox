@@ -216,9 +216,9 @@
         "type": "github",
         "repo": "cursor/plugins",
         "path": "cursor-team-kit/skills/thermo-nuclear-code-quality-review",
-        "ref": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
+        "ref": "246bc508c139c5e036dfafea8978d31a7433279f",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -393,9 +393,9 @@
           ".gitignore",
           "assets/"
         ],
-        "ref": "1cae835995c0ff4d9a33a6fec82cca0a54b7cd05",
+        "ref": "02aa761236f36d7ace0fa1833fc2a168b59d369a",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -410,9 +410,9 @@
         "type": "github",
         "repo": "mattpocock/skills",
         "path": "skills/productivity/grill-me",
-        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       },
       "depends_on": [
         "grilling"
@@ -430,9 +430,9 @@
         "type": "github",
         "repo": "mattpocock/skills",
         "path": "skills/productivity/grilling",
-        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -449,9 +449,9 @@
         "type": "github",
         "repo": "Panniantong/Agent-Reach",
         "path": "agent_reach/skill",
-        "ref": "422478ae0264d2236bf7ebd1c3b11a69aaafa4a3",
+        "ref": "c70ae6da5d39bc90e09ad2ae0575ccc89f31e284",
         "license": "MIT",
-        "synced_at": "2026-11-07",
+        "synced_at": "2026-11-11",
         "exclude": [
           "SKILL_en.md"
         ]
@@ -469,9 +469,9 @@
         "type": "github",
         "repo": "mattpocock/skills",
         "path": "skills/engineering/grill-with-docs",
-        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -488,9 +488,9 @@
         "type": "github",
         "repo": "mattpocock/skills",
         "path": "skills/engineering/domain-modeling",
-        "ref": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+        "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -501,6 +501,8 @@
         "SKILL.md",
         "references/android-applications.md",
         "references/connection-and-recovery.md",
+        "references/desktop-build.md",
+        "references/environments.md",
         "references/evidence-workflows.md",
         "references/javascript-applications.md",
         "references/native-and-artifacts.md",
@@ -510,9 +512,9 @@
         "type": "github",
         "repo": "morluto/rea",
         "path": ".agents/skills/reverse-engineer-anything",
-        "ref": "90e433df06b3f83417176b8db1b0a905f9df1d3a",
+        "ref": "2885347cde20f360f8ebee64a6e95f6a8e01cb5e",
         "license": "MIT",
-        "synced_at": "2026-10-20"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -540,6 +542,8 @@
         "learnings/x-com/tools/search-users.js",
         "learnings/x-com/tools/timeline.js",
         "references/clearing-state.md",
+        "references/install-macos.md",
+        "references/install-windows.md",
         "references/install.md",
         "scripts/install.sh"
       ],
@@ -547,9 +551,9 @@
         "type": "github",
         "repo": "citrolabs/ego-lite",
         "path": "skills/ego-browser",
-        "ref": "d392204d1ea1a8027a591ab2b0129c2e11d85f26",
+        "ref": "bacaece43900e8ca68eea3b6f1663835ea38df9e",
         "license": "MIT",
-        "synced_at": "2026-10-21"
+        "synced_at": "2026-11-11"
       }
     },
     {
@@ -564,9 +568,9 @@
         "type": "github",
         "repo": "anthropics/skills",
         "path": "skills/frontend-design",
-        "ref": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+        "ref": "2c5958ecac7cee2b583967a2c4981d0f4a75c579",
         "branch": "main",
-        "synced_at": "2026-10-24",
+        "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       }
     },
@@ -582,8 +586,8 @@
         "type": "github",
         "repo": "ant-design/ant-design",
         "path": "public/.well-known/agent-skills/antd-component-lookup",
-        "ref": "599b78b6c63c96818627a0efdaba583da0b55047",
-        "synced_at": "2026-10-24",
+        "ref": "0572a24a2ada6021a55d93fceca93a67b2dc6e2f",
+        "synced_at": "2026-11-11",
         "license": "MIT"
       }
     },
@@ -599,8 +603,8 @@
         "type": "github",
         "repo": "ant-design/ant-design",
         "path": "public/.well-known/agent-skills/antd-theme-customization",
-        "ref": "599b78b6c63c96818627a0efdaba583da0b55047",
-        "synced_at": "2026-10-24",
+        "ref": "0572a24a2ada6021a55d93fceca93a67b2dc6e2f",
+        "synced_at": "2026-11-11",
         "license": "MIT"
       }
     },
@@ -649,8 +653,8 @@
         "type": "github",
         "repo": "alirezarezvani/claude-skills",
         "path": "product-team/skills/ui-design-system",
-        "ref": "6d2f02ea077eead1bee5411a31bcc6db5a11a70c",
-        "synced_at": "2026-10-24",
+        "ref": "91a1ddaab1ae8fe95b8ecd3e98419458db86a992",
+        "synced_at": "2026-11-11",
         "license": "MIT"
       }
     },
@@ -670,8 +674,8 @@
         "type": "github",
         "repo": "rampstackco/claude-skills",
         "path": "dist/codex/.agents/skills/creative-direction",
-        "ref": "9b90db257f7395fab76ff9bfcb808456709f6af3",
-        "synced_at": "2026-10-24",
+        "ref": "059051082ab0c1dc02d271506d7318eca6b55f51",
+        "synced_at": "2026-11-11",
         "license": "MIT"
       }
     },
@@ -707,8 +711,8 @@
         "type": "github",
         "repo": "shadcn-ui/ui",
         "path": "skills/shadcn",
-        "ref": "ffd225775bbb7955a673f08bb9be4a63600d9dfb",
-        "synced_at": "2026-10-24",
+        "ref": "8ab27715521cbd4f87ae6886cd989cbb678f6de7",
+        "synced_at": "2026-11-11",
         "license": "MIT"
       }
     },
@@ -812,9 +816,9 @@
         "type": "github",
         "repo": "ranbot-ai/awesome-skills",
         "path": "skills/awesome-llm-invoice-organizer",
-        "ref": "28a447831e7302b40ac780b33fe8c516004e169d",
+        "ref": "4698e2781eb758a1f231ac75ed053ac38c615ab7",
         "branch": "main",
-        "synced_at": "2026-10-31",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -915,8 +919,8 @@
         "type": "github",
         "repo": "pbakaus/impeccable",
         "path": ".claude/skills/impeccable",
-        "ref": "24aa2547f1d80e8d0edd767d9b76bc0bb65a3b6b",
-        "synced_at": "2026-11-03",
+        "ref": "fead7938331bb92129e3c5ce14f600611067bd06",
+        "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       },
       "source_note": "Packaging additions 2026-11-03: LICENSE and NOTICE.md match the upstream repository root at the pinned commit (Git blobs bb3f6d23b1f8025514a62a12b51b47d73e3c9aa9 and 0468271c904ae334cfaf27da6f8df3d5f419a1f0). Added the bundled modern-screenshot MIT license from qq15725/modern-screenshot LICENSE blob c83888272c1ec834dc656067a5ab9e8af12b82fb; exact bundled library version was not independently established. Replaced the truncated catalog description with a complete concise description. Original skill frontmatter and vendored implementation bytes remain unchanged."
@@ -1075,8 +1079,8 @@
           "py.typed",
           "skill.md"
         ],
-        "ref": "59b5ab1151e031fb42e39cfc9a50bf96f2d57ae0",
-        "synced_at": "2026-11-04",
+        "ref": "35d1d2038b9e9d470f117bf8f2473d415b5f5358",
+        "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       },
       "source_note": "Imported 2026-11-04 from Graphify-Labs/graphify (Apache-2.0): only the agent-facing skill sources (upstream graphify/skill.md renamed to SKILL.md, plus graphify/skills/agents/references/) were vendored; upstream skill.md is excluded so updates never re-add the lowercase duplicate. The graphify CLI itself is NOT vendored — install it with `uv tool install graphifyy` / `pipx install graphifyy`; the skill requires the CLI on PATH. Renames and exclusions recorded here are local adaptations."
@@ -1210,6 +1214,7 @@
         "remotion-markup/timing.md",
         "remotion-markup/transitions.md",
         "remotion-markup/video-editing.md",
+        "remotion-markup/video-matting.md",
         "remotion-markup/voiceover.md",
         "remotion-multimedia/REFERENCE.md",
         "remotion-multimedia/agents/openai.yaml",
@@ -1238,8 +1243,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-best-practices",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1259,8 +1264,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-captions",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1279,8 +1284,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-create",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1297,8 +1302,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-docs",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1317,8 +1322,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-interactivity",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1335,8 +1340,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-license",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1382,8 +1387,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-maps",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1459,14 +1464,15 @@
         "timing.md",
         "transitions.md",
         "video-editing.md",
+        "video-matting.md",
         "voiceover.md"
       ],
       "upstream": {
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-markup",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1486,8 +1492,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-multimedia",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1505,8 +1511,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-render",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1526,8 +1532,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-saas",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1544,8 +1550,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-studio",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1562,8 +1568,8 @@
         "type": "github",
         "repo": "remotion-dev/skills",
         "path": "skills/remotion-upgrade",
-        "ref": "c7cb2fdcacd134fb2ccb9b7a44f9ffa44e467271",
-        "synced_at": "2026-11-05",
+        "ref": "1af7e69a2a613437d46095924057970a6a7df40d",
+        "synced_at": "2026-11-11",
         "license": "UNVERIFIED"
       }
     },
@@ -1580,9 +1586,9 @@
         "type": "github",
         "repo": "alibaba/open-code-review",
         "path": "skills/open-code-review",
-        "ref": "0d403392073bcb0d3894c5364b0a85e7b6a47e0d",
+        "ref": "5e9a18e8344a6a0684fbb434ce617abd2e2619c7",
         "branch": "main",
-        "synced_at": "2026-11-07",
+        "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       }
     },
@@ -1599,9 +1605,9 @@
         "type": "github",
         "repo": "alibaba/open-code-review",
         "path": "skills/open-code-review-delegate",
-        "ref": "0d403392073bcb0d3894c5364b0a85e7b6a47e0d",
+        "ref": "5e9a18e8344a6a0684fbb434ce617abd2e2619c7",
         "branch": "main",
-        "synced_at": "2026-11-07",
+        "synced_at": "2026-11-11",
         "license": "Apache-2.0"
       }
     }

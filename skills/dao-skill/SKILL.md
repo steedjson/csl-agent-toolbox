@@ -40,7 +40,7 @@ Define three distinct roots:
 
 - `ENGINE_ROOT`: real directory containing the active `SKILL.md`; this is often the installed read-mostly helper package.
 - `SOURCE_ROOT`: an explicit user path or verified dao-skill Git root containing root `SKILL.md`; never infer it from `ENGINE_ROOT` alone.
-- `INSTALL_ROOT`: `${CODEX_HOME:-$HOME/.codex}/skills/dao-skill` unless the user explicitly selects another target.
+- `INSTALL_ROOT`: the active host's user skill directory, `${CODEX_HOME:-$HOME/.codex}/skills/dao-skill` for Codex or `$HOME/.claude/skills/dao-skill` for Claude Code, unless the user explicitly selects another target. Pass any non-default root to the installer as `--target`.
 
 Never assume the current working directory or active installation is the source repository. For a generated Skill run `python3 "$ENGINE_ROOT/scripts/quality_check.py" "$TARGET"`.
 
@@ -71,9 +71,18 @@ A primary mode does not cancel an explicitly requested action:
 - “优化 / 重构 / 加固到最好” without a concrete failure means D first, then C; with a concrete failed output, use E first, then C.
 - “分析失败并更新” means E first, then patch files and validate.
 - “吸收这篇文章并落到仓库” means F first, then apply the smallest accepted update.
-- “优化、全局安装并推送” means inspect and patch locally, validate, install only after local success, then publish only because the external action was explicitly authorized.
+- “优化、全局安装并推送” means inspect and patch locally, validate, commit the in-scope changes, install that exact commit, verify the installed copy, then push only because the external action was explicitly authorized. A push request authorizes the commit it needs; do not stop to ask for it separately.
 
 Do not stop after a report when the user also asked for implementation. Do not mutate files when the user asked only for diagnosis or review.
+
+### Neighbor Skill-Authoring Skills
+
+Some hosts also ship a Skill-authoring Skill, such as Anthropic's `skill-creator`, whose triggers overlap with create, optimize, and evaluate requests. Route by the job, not by the trigger words:
+
+- A Skill the user names owns the request. Once dao-skill is running, do not switch away just because the neighbor also matches.
+- dao-skill keeps root finding, design, Trust-gated evaluation and verdicts, failure-driven evolution, absorption, and its own self-maintenance.
+- Hand off only the part that needs the neighbor's tooling: running eval suites, benchmarks with variance analysis, or measured description-trigger loops. Pass the target path, root problem, success signals, Trust boundary, and fixtures. Treat the returned results as evidence for the evidence level and verdict, not as a replacement for the Trust Gate.
+- Never run both workflows against the same target at once. If the neighbor is unavailable, say so, keep the evidence level where it is, and do not report benchmark results that were not run.
 
 ## Optimization Contract
 
@@ -145,6 +154,18 @@ For file-producing work:
 5. Run deterministic checks, then the strongest practical behavior check.
 6. Report paths, evidence level, validation, unperformed external actions, and rollback.
 
+### 6. 机 · Execute The Evolution Machine
+
+When a local repository or SkillBank must actually evolve:
+
+1. Build the evidence packet and classify risk.
+2. Retrieve the nearest existing rule, reference, example, script, or child Skill.
+3. Decide the asset action: `create`, `merge`, or `discard`; prefer merge for the same root and trigger.
+4. Patch the smallest asset that changes future behavior.
+5. Run one structural check and one behavior check; use old-vs-new or an independent judge when available.
+6. Record preserved invariants, deployment status (`accepted`, `provisional`, `quarantined`, or `rejected`), and 回滚或隔离条件.
+7. Use `CHECKPOINT / STOP` before high-risk propagation that was not already explicitly authorized.
+
 Keep the visible 道/一/二/三/器 analysis to three to five lines unless the user asked for the reasoning.
 
 ## Mode Contracts
@@ -167,36 +188,20 @@ Read `references/evaluation-rubric.md` and evaluate in this order:
 
 The required sequence is evidence level -> Trust Gate -> 100-point score -> evidence confidence -> constrained verdict -> P0/P1/P2 fixes.
 
-```txt
-evidence level -> Trust Gate -> 100-point score -> evidence confidence -> constrained verdict -> P0/P1/P2 fixes
-```
-
 Trust is a hard gate. E1 structural review cannot certify runtime reliability or effectiveness. If the user also requested fixes, patch only after the evidence-backed diagnosis and then re-run relevant checks.
 
 ### Mode E · 返观进化
 
-Read `references/evolution-protocol.md`. Build the evidence packet, reopen the root, retrieve the nearest existing asset, choose asset decision create/merge/discard, set deployment status accepted/provisional/quarantined/rejected, patch conservatively, and retest the old failure while preserving known successes. Vague feedback may drive a provisional patch, not a benchmark claim.
+Read `references/evolution-protocol.md`. Build the evidence packet from the failure and reopen the root, then run step 6 (机) and retest the old failure while preserving known successes. Vague feedback may drive a provisional patch, not a benchmark claim.
 
 ### Mode F · 自化吸收
 
-Read `references/self-evolving-skill-system.md`. Extract portable mechanisms rather than wording or unsupported claims. Record the source boundary, compare the nearest rule, choose the asset decision create/merge/discard, set deployment status accepted/provisional/quarantined/rejected, patch the smallest durable asset, validate, and define rollback.
-
-### 6. 机 · Execute The Evolution Machine
-
-When a local repository or SkillBank must actually evolve:
-
-1. Build the evidence packet and classify risk.
-2. Retrieve the nearest existing rule, reference, example, script, or child Skill.
-3. Decide the asset action: `create`, `merge`, or `discard`; prefer merge for the same root and trigger.
-4. Patch the smallest asset that changes future behavior.
-5. Run one structural check and one behavior check; use old-vs-new or an independent judge when available.
-6. Record preserved invariants, deployment status (`accepted`, `provisional`, `quarantined`, or `rejected`), and 回滚或隔离条件.
-7. Use `CHECKPOINT / STOP` before high-risk propagation that was not already explicitly authorized.
+Read `references/self-evolving-skill-system.md`. Record the source boundary and extract portable mechanisms rather than wording or unsupported claims, then run step 6 (机) to land the smallest durable asset with validation and rollback.
 
 ## Runtime And Publication Contract
 
-- Prefer an explicit output path, then project-local `.dao/skills/<skill-name>/`.
-- Use `${CODEX_HOME:-$HOME/.codex}/skills/<skill-name>/` only when the user asks for global installation or discovery.
+- Prefer an explicit output path, then project-local `.dao/skills/<skill-name>/`. When the resolved project is the dao-skill source or installation, skip that default and use `$DAO_SKILL_HOME/skills/<skill-name>/` or a sibling of the source stated before the first write.
+- Use the active host's user skill directory (`${CODEX_HOME:-$HOME/.codex}/skills/` or `$HOME/.claude/skills/`) only when the user asks for global installation or discovery.
 - Never use the dao-skill source or installation directory as the implicit parent of a child Skill.
 - Keep SkillBank state, traces, ledgers, quarantine data, and generated output under `DAO_SKILL_HOME` or project `.dao/`.
 - Inspect before overwriting. Preserve a rollback point for an existing installation.
@@ -207,15 +212,15 @@ When a local repository or SkillBank must actually evolve:
 
 When the target is dao-skill itself, classify the active paths as source repository, installed copy, generated child Skill, or runtime state. Then execute in this order:
 
-1. Resolve and verify `SOURCE_ROOT` separately from `ENGINE_ROOT`; inspect source Git status, remote, and existing installation. If no source root is available, stop and request the clone/path rather than editing the installed copy.
+1. Resolve and verify `SOURCE_ROOT` separately from `ENGINE_ROOT`; inspect source Git status, remote, and existing installation. When a push is in scope, fetch first: fast-forward a branch that is behind, and emit `CHECKPOINT / STOP` for one that has diverged. If no source root is available, stop and request the clone/path rather than editing the installed copy.
 2. Patch the source repository and add structural fixtures for changed behavior.
 3. Run `python3 "$SOURCE_ROOT/scripts/run_checks.py"` and keep evidence claims at E1/E2 unless real prompt replays exist.
-4. Commit only when requested. Before an authorized global install, require a clean source worktree mapped to an exact commit; if committing was not authorized, stop after the successful dry-run and request that specific decision.
-5. Run `python3 "$SOURCE_ROOT/scripts/install.py" --source "$SOURCE_ROOT" --target "$INSTALL_ROOT" --dry-run`; only after success, use `--force` when global installation was explicitly requested and the clean-source condition is satisfied.
-6. Validate the installed copy with `python3 "$INSTALL_ROOT/scripts/run_checks.py"`; the installer must preserve the old installation outside the discoverable `skills/` directory.
-7. Push only when requested, then verify the remote branch SHA equals the local commit.
+4. Commit only when a commit or a push was requested; stage only the in-scope files. If unrelated uncommitted changes block a clean worktree, emit `CHECKPOINT / STOP` instead of committing or stashing them. If neither commit nor push was authorized, stop after the successful dry-run and request that specific decision.
+5. Run `python3 "$SOURCE_ROOT/scripts/install.py" --source "$SOURCE_ROOT" --target "$INSTALL_ROOT" --dry-run`; it must report `Source: ... @ <commit> (clean)`. Only then use `--force` when global installation was explicitly requested. The installer refuses an uncommitted or untracked Git source; `--allow-dirty` is for disposable test targets, and the installer refuses it for a host Skill directory.
+6. Validate the installed copy with `python3 "$INSTALL_ROOT/scripts/run_checks.py"`. It first checks the `.dao-install.json` receipt, fails on any hand-edited, missing, or extra file, and prints the `Installed source revision` SHA. Keep that SHA; only a revision ending in `(clean)` may be compared with the remote. The installer must preserve the old installation outside the discoverable `skills/` directory.
+7. Push only when requested and never with force; a rejected or non-fast-forward push is a `CHECKPOINT / STOP`. Then verify the remote branch SHA equals the installed source revision.
 
-Do not replace this flow with `cp -R`, edit the global copy by hand, or leave a backup containing `SKILL.md` under `${CODEX_HOME}/skills/`.
+Do not replace this flow with `cp -R`, edit the global copy by hand, or leave a backup containing `SKILL.md` under any host's `skills/` directory.
 
 ## Failure Branches
 

@@ -13,6 +13,15 @@ from validation_utils import strip_nonsemantic_markdown
 
 REQUIRED_FRONTMATTER = {"name", "description"}
 NAME_RE = re.compile(r"^[a-z0-9-]+$")
+CATALOG_HEADING_RE = re.compile(
+    r"^#{2,6}\s+.*(公式|模板|套路|句式|formula|template|catalog)", re.IGNORECASE
+)
+CATALOG_ITEM_RE = re.compile(r"^\s*(\d+[.)、]|[-*+]\s|\|)")
+SELECTION_MARKER_RE = re.compile(
+    r"适用|不适用|禁用|选用|选择|诊断|排除|fit signal|when to use|select|exclude|diagnos",
+    re.IGNORECASE,
+)
+CATALOG_MIN_ITEMS = 8
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -209,6 +218,73 @@ def check_skill(path: Path, profile: str = "generic") -> list[str]:
     return issues
 
 
+def catalog_selection_warning(body: str) -> str | None:
+    """Flag a formula/template catalog that has no visible selection rule."""
+
+    semantic_body = strip_nonsemantic_markdown(body)
+    if SELECTION_MARKER_RE.search(semantic_body):
+        return None
+    lines = semantic_body.splitlines()
+    for index, line in enumerate(lines):
+        if not CATALOG_HEADING_RE.match(line):
+            continue
+        items = 0
+        for following in lines[index + 1 :]:
+            if re.match(r"^#{1,6}\s", following):
+                break
+            if CATALOG_ITEM_RE.match(following):
+                items += 1
+        if items >= CATALOG_MIN_ITEMS:
+            return (
+                f"Catalog section '{line.lstrip('#').strip()}' lists {items} entries but the "
+                "Skill defines no selection rule (fit signals, exclusions, or input diagnosis); "
+                "see the formula/template item in references/skill-generation-template.md."
+            )
+    return None
+
+
+def skill_warnings(path: Path) -> list[str]:
+    try:
+        _, body = parse_frontmatter((path / "SKILL.md").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError):
+        return []
+    warning = catalog_selection_warning(body)
+    return [warning] if warning else []
+
+
+def dao_skill_ancestor(path: Path) -> Path | None:
+    for parent in path.parents:
+        skill_md = parent / "SKILL.md"
+        if not skill_md.is_file():
+            continue
+        try:
+            frontmatter, _ = parse_frontmatter(skill_md.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        if frontmatter.get("name") == "dao-skill":
+            return parent
+    return None
+
+
+def engine_nesting(path: Path) -> tuple[str, str] | None:
+    """Classify a child Skill target that sits inside a dao-skill engine."""
+
+    engine = dao_skill_ancestor(path)
+    if engine is None:
+        return None
+    if (engine / ".git").exists():
+        return (
+            "warning",
+            f"Target is inside the dao-skill source {engine}; it stays unpublished local "
+            "workspace. Prefer $DAO_SKILL_HOME/skills/<name>/ or a sibling of the source.",
+        )
+    return (
+        "error",
+        f"Target is inside the installed dao-skill {engine}; the next install replaces it. "
+        "Move it to <project>/.dao/skills/<name>/ or $DAO_SKILL_HOME/skills/<name>/.",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check a Codex skill folder.")
     parser.add_argument("path", nargs="?", default=".", help="Path to skill folder")
@@ -222,6 +298,15 @@ def main() -> int:
 
     path = Path(args.path).resolve()
     issues = check_skill(path, args.profile)
+    nesting = engine_nesting(path)
+    if nesting is not None:
+        level, message = nesting
+        if level == "error":
+            issues.append(message)
+        else:
+            print(f"Warning: {message}")
+    for warning in skill_warnings(path):
+        print(f"Warning: {warning}")
     if issues:
         print("Quality check failed:")
         for issue in issues:
