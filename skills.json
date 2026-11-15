@@ -340,7 +340,11 @@
         "SKILL.md",
         "scripts/install.sh",
         "scripts/xerj-project",
-        "scripts/xerj-service"
+        "scripts/xerj-service",
+        "scripts/index-client.ts",
+        "scripts/test-index-client.ts",
+        "scripts/build-index-client.py",
+        "scripts/group-split.patch"
       ]
     },
     {

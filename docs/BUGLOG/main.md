@@ -2,6 +2,23 @@
 
 条目由 /csl-buglog 或人工维护,供 coder/reviewer 动手前核对
 
+## [2026-11-14][xerj] 文档字段相似度压过仓库 scope，增量代码被歧义拒绝
+- 现象: 分组拆分错误解除后，真实多仓库索引出现数千文件的 ambiguous assignment；相同内容在空目录测试正常。
+- 根因: classify_new 对 docs 先比较字段集合重合率，后比较 scope；不同仓库的文档字段并集不同，两个外部数据集可同时排在所属仓库数据集之前。原 scope 信息已存在，并非缺失。
+- 修法: 仅 docs 优先最近的明确仓库 scope，再比较字段重合率；结构化数据仍以 schema 优先，类型校验及缺 scope 时的真正歧义拒绝均保留。
+- 关联: skills/xerj/scripts/group-split.patch（reconcile_plan.rs 部分）、build-index-client.py、skills/xerj/SKILL.md
+- 验证: 三个仓库数据集的最小复现修复前失败；修复后 21 项分组及 16 项数据集回归全部通过，含原结构化数据优先级及旧计划歧义拒绝测试。
+- 教训: 小目录成功不能证明真实多仓库覆盖；必须检查最终 code_files_indexed/junked，文档字段并集不代表归属。
+
+## [2026-11-14][xerj] 历史重复内容全部分叉导致增量索引 group claimed twice
+- 现象: rc.101 在多个原本相同的文件分别改成不同内容后，增量 reconcile 失败；单 worker 仍复现。
+- 根因: reconcile_groups 给每个分叉候选重复继承同一个历史 group_id，末尾 claimed 检查拒绝。
+- 修法: 过滤已经被占用的历史路径 owner，只允许一个分叉保留旧 ID；补三文件分叉及输入顺序无关的回归。固定官方公开源码版本构建 HTTP-only 客户端，包装层仅将 autoindex 路由到它；客户端与原生程序双 SHA-256 绑定，升级后要求复核。原生服务及其 format-4 数据不替换。
+- 关联: skills/xerj/scripts/{group-split.patch,build-index-client.py,index-client.ts,test-index-client.ts,xerj-project}、skills/xerj/SKILL.md
+- 验证: 修改前新回归精确失败，修改后 20 项同步测试通过；本地 HTTP 实测分叉、旧内容消失、删除、重命名及无变化重跑通过。
+- 教训: 内容去重组拆分时，路径身份只能被继承一次；修索引客户端不应顺带替换不兼容的存储服务。
+- 补强: 只在单一历史 owner 已被占用时分配新 ID；增加多历史组冲突不能被分叉遮蔽的回归，保留原有拒绝语义。
+
 ## [2026-11-10][xerj] 更正上一条:崩溃根因包装层是本地自有代码,非上游发行物
 - 现象: 查上游 v1.0.0-rc.101/rc.102 与 xerj-org/xerj 全库,`xerj-service`、`xerj-project` 零命中;官方 get.sh 只装单个 `xerj` 二进制,官方 Claude 插件直接跑 `xerj mcp`
 - 根因: 上一条写"根治需上游建目录"属错误归因。这两个文件是本机自行编写的包装层,本仓库就是唯一源,改本地即根治

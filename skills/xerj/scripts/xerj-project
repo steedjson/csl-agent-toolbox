@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { acquireOperation, scheduleUpdate } from './xerj-service';
+import { indexClient } from './index-client';
 
 const home = homedir();
 const storage = join(home, 'Library/Application Support/xerj');
@@ -101,7 +102,10 @@ if (command === 'index' || command === 'watch') {
 } else {
   nativeArgs = [command, ...args];
 }
-const result = spawnSync(executable, [...nativeArgs, '--url', url, '--prefix', prefix], {
+let runner = executable;
+try { if (nativeArgs[0] === 'autoindex') runner = indexClient(storage, executable); }
+catch (e) { fail(e.message); }
+const result = spawnSync(runner, [...nativeArgs, '--url', url, '--prefix', prefix], {
   stdio: 'inherit', env: { ...process.env, XERJ_API_KEY: key, XERJ_DISABLE_FEEDBACK: 'true' },
 });
 if (result.error) { console.error(`xerj-project: ${result.error.message}`); process.exit(1); }

@@ -38,6 +38,21 @@ Local fixes carried in `scripts/xerj-service` (re-apply when the wrapper is ever
 
 - `scheduleUpdate()` creates `~/Library/Logs/xerj` before opening the log. Without it every `xerj-project` subcommand died with ENOENT whenever that directory was absent.
 
+## rc.101 autoindex repairs
+
+`group claimed twice` occurs when formerly identical files all change to different contents. The pinned repair in `scripts/group-split.patch` allows only one split child to inherit the historical group ID. It also makes a document’s known repository scope outrank field-union overlap, preventing valid additions from being refused as ambiguous. Structured-data matching and type checks remain unchanged. Both fixes include regression tests. Source: [xerj-org/xerj@3f6aefa8](https://github.com/xerj-org/xerj/tree/3f6aefa8d00f16bad714256998afff922ddfbdb7), Apache-2.0.
+
+Build explicitly from a trusted extraction of that exact source revision (Rust/Cargo and Python 3.11+ required):
+
+```sh
+python3 scripts/build-index-client.py /absolute/path/to/xerj-source
+bun test ./scripts/test-index-client.ts
+```
+
+The builder checks both source preimages, applies the patch, runs the group and dataset reconciliation tests, and installs a standalone HTTP autoindex client under `~/Library/Application Support/xerj/index-client/`. `xerj-project` uses it for index/watch/map/status only; search/def and the native format-4 server remain unchanged. The public server source uses an older store format: **never replace the installed server with this build**.
+
+The manifest pins both client and native binary SHA-256. A native upgrade blocks patched indexing until this compatibility boundary is revalidated; search remains available. Normal commands never build or install it. Without a repair manifest, the wrapper uses native XERJ. Preserve the existing journal and indices; do not work around the bug by deleting them. To deliberately stop using the repair, move its manifest aside after upstream support has been verified.
+
 ## MCP
 
 `xerj` is registered as a user-scope MCP server (`claude mcp list` shows it), which avoids the ~1.5 s process start. Its 23 tools default to the `ax-*` index and return **zero hits** unless scoped, because autoindex writes `p-<repo>-*`:
