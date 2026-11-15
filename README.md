@@ -38,6 +38,10 @@ ZCode 支持 Skill 软链接、MCP 原生配置和本地插件目录；MCP 写�
 
 ### 媒体生成（media-generation）
 
+#### [csl-video-ss1](./skills/csl-video-ss1/)
+
+AI 短视频脚本与分镜提示词生成器：输入主题＋参数（分段/秒数/比例/风格/生成方式 1 直出 / 2 首帧 / 3 首尾帧/语音设定），一次产出完整套件——脚本、定装照提示词、人物锚点清单、分镜提示词、剧名/封面/封底/BGM、生成器投喂指引与产出自检。核心机制：锚点清单跨段逐字嵌入（真实生成器因果实证）、首尾帧一致性契约、六维细节覆盖取代字数下限、语音口音与提示词语文跟随用户输入语言。附机械校验器 `scripts/verify_output.py` 与 16 次冷跑＋E2E 实测证据台账（`EVIDENCE.md`）。
+
 #### [custom-image-gen](./skills/custom-image-gen/)
 
 通过 `image_auth.json` 和当前 Codex provider 配置解析自定义图片生成端点与凭据（Key 缺失时回退 `auth.json` 的 `OPENAI_API_KEY`），再复用系统 `imagegen` Skill 和 CLI。仅负责 provider 适配，不复制系统图片生成工作流。

@@ -806,6 +806,33 @@
       ]
     },
     {
+      "name": "csl-video-ss1",
+      "description": "AI 短视频脚本与分镜提示词生成器：自定义分段/秒数/比例/风格/生成方式/语音设定，锚点清单跨段逐字嵌入保证人物一致，含首尾帧一致性契约、六维细节覆盖、生成器投喂指引与产出自检；语音口音与提示词语文跟随用户输入语言",
+      "category": "media-generation",
+      "files": [
+        "SKILL.md",
+        "README.md",
+        "EVIDENCE.md",
+        "scripts/verify_output.py",
+        "tests/reports/A_missing_params.md",
+        "tests/reports/B_suiNi.md",
+        "tests/reports/C_mode2.md",
+        "tests/reports/D_mode3.md",
+        "tests/reports/E_regression.md",
+        "tests/reports/F_boundary.md",
+        "tests/reports/G1_gpt56_regression.md",
+        "tests/reports/G2_grok45_regression.md",
+        "tests/reports/T10_traditional_variant.md",
+        "tests/reports/T7a_mode1_glm.md",
+        "tests/reports/T7b_mode1_grok.md",
+        "tests/reports/T8a_6seg_edge.md",
+        "tests/reports/T8b_7seg_redirect.md",
+        "tests/reports/T8c_dual_protagonist.md",
+        "tests/reports/T8d_partial_params.md",
+        "tests/reports/T9_6seg_mode3.md"
+      ]
+    },
+    {
       "name": "invoice-organizer",
       "category": "productivity",
       "description": "Automatically organizes invoices and receipts for tax preparation by reading messy PDF, image, and document files, extracting vendor, invoice number, date, and amount, renaming files to a standard format, and sorting them into logical folders by vendor, expense category, time period, or tax category. Use when preparing tax records, tidying receipt folders, reconciling expenses, or setting up ongoing bookkeeping.",
