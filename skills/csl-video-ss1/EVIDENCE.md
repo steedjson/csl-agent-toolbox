@@ -39,7 +39,7 @@
 
 ## 二、真实生成器端到端（gpt-image-2 + grok-imagine-video）
 
-产物（不入库，保留在评估机 `~/Downloads/csl-video-ss1-e2e/`）：
+产物（不入库；2026-11-15 起按「每剧一夹」存放于评估机 `~/Downloads/csl-video-projects/night-market-15s/`——frames/ 原图、video/ 成片、qa/ 拼图与抽帧；下文文件名均在该目录对应分区下）：
 
 - `frame1_dusk.png` / `frame2_peak.png` / `frame3_latenight.png`：同一锚点块三场景独立出图。视觉判读（拼图 `cs_frames.jpg`，126KB）：三联为同一摊贩，深蓝油渍围裙、左腕红毛巾、挂钥匙、黑发夹灰跨三图保持；1 处夹克色漂移。≈6/7 锚点真实生效。
 - `seg2_video.mp4`（5.04s，9:16，aac）：方式2 全流程（首帧→图生视频）。抽帧 `seg2_frame_1/2/3.jpg`：动作弧兑现（翻煎饼→装袋→递向镜头大笑），推近运镜生效，人物服装跨帧稳定。**对白音频已人耳听验（T11，2026-11-15 用户确认：普通话对白存在且发音清晰）——语音链路端到端打通。**
