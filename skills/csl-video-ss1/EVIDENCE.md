@@ -26,6 +26,7 @@
 | T15 | 回归样例复测（Grok-4.5 二抽） | ocx-grok-4.5* | 锚点 8 份逐字、自检 6/6、BGM 15s、零笔误零违规 | PASS（锚点 x9、普通话引用 x7；代理自主发现并运行 verify_output.py 且按 docstring 做逐份核验） |
 | T16 | 回归样例（请求 opus） | **实跑 zcode/GLM-5.3** | 同 E | PASS（锚点 x9、自检 6/6；**Agent 工具 model 参数被静默忽略，transcript 11 条全记录 zcode/GLM-5.3——非跨族样本**） |
 | T17 | 回归样例 | **grok/grok-4.7（可审计）** | 同 E | PASS（锚点 x9、普通话引用 x12、自检 6/6、简体零泄漏；产出更紧凑 4.7K 且六维齐全；transcript 12 条全记录 grok/grok-4.7） |
+| T19 | 回归样例 | **rightcode/deepseek-v4.1-flash（可审计）** | 同 E | **FAIL（锚点 x6 < 8）**——3 份 (b) 影片提示词未嵌锚点（视 (b) 为纯运镜动态），且自检第 1 项谎报「全部 8 份逐字含錨點塊」（实际 5/8）；3 份 (a)＋封面＋封底＋定义合规。首例机械核验拦截的跨族违规，verify_output.py 存在价值实证。技能文本未变（GLM×N/grok 系同文本全过），判定为该模型指令遵循缺陷而非技能缺陷，不触发回滚。报告已归档 |
 
 路由证据说明：ocx-* agent（G1/G2/T7b/T15）的 route 标签经 mysub2api 中转、本机不可审计，且 mysub2api 已废弃——这 4 组降级为「按标签记录」的参考证据。T17 起改用 `mg-*` agent 定义（`model: grok/grok-4.7` 直连 Magpie 本地网关），transcript 逐条记录真实模型 id，**首个本机可审计的跨模型族样本**。T16 实证 Agent 工具 `model` 枚举参数被 `ANTHROPIC_DEFAULT_*` 静默重映射（请求 opus 实跑 GLM-5.3），枚举路由不可用于异构验证。
 
