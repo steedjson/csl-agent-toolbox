@@ -119,8 +119,10 @@ def extract_chrome_cookies(domain: str) -> Dict[str, str]:
 
 
 class YApiClient:
-    def __init__(self, base_url: str, cookies: Optional[Dict[str, str]] = None, cookie_str: Optional[str] = None):
+    def __init__(self, base_url: str, cookies: Optional[Dict[str, str]] = None,
+                 cookie_str: Optional[str] = None, token: Optional[str] = None):
         self.base_url = base_url.rstrip("/")
+        self.token = token
         if cookie_str:
             self.cookie_header = cookie_str
         elif cookies:
@@ -133,6 +135,14 @@ class YApiClient:
         self.ssl_ctx.verify_mode = ssl.CERT_NONE
 
     def _request(self, endpoint: str, method: str = "GET", data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        # 项目 token 鉴权：GET 拼 query，POST 并入 body（本实例两类端点均支持 token）
+        if self.token and "?" in endpoint:
+            endpoint += f"&token={self.token}"
+        elif self.token:
+            endpoint += f"?token={self.token}"
+        if self.token and method == "POST" and data is not None:
+            data = dict(data, token=self.token)
+
         url = f"{self.base_url}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
@@ -162,9 +172,31 @@ class YApiClient:
     def get_interface(self, interface_id: int) -> Dict[str, Any]:
         return self._request(f"/api/interface/get?id={interface_id}")
 
-    def add_category(self, project_id: int, name: str, desc: str = "") -> Dict[str, Any]:
-        payload = {"name": name, "project_id": project_id, "desc": desc}
+    def add_category(self, project_id: int, name: str, desc: str = "", parent_id: int = 0) -> Dict[str, Any]:
+        payload = {"name": name, "project_id": project_id, "desc": desc, "parent_id": parent_id}
         return self._request("/api/interface/add_cat", method="POST", data=payload)
+
+    def del_category(self, catid: int) -> Dict[str, Any]:
+        # 注意参数名是 catid；分类须为空(无接口无子分类)才能删
+        return self._request("/api/interface/del_cat", method="POST", data={"catid": catid})
+
+    def cat_tree(self, project_id: int) -> Dict[str, Any]:
+        return self._request(f"/api/interface/get_cat_tree?project_id={project_id}")
+
+    def cat_map(self, project_id: int) -> Dict[tuple, int]:
+        """{(parent_id, name): cat_id}，含嵌套层级。"""
+        tree = self.cat_tree(project_id)
+        if tree.get("errcode") != 0:
+            raise RuntimeError(f"Failed to get cat tree: {tree.get('errmsg')}")
+        out: Dict[tuple, int] = {}
+
+        def walk(nodes, parent=0):
+            for n in nodes:
+                out[(parent, n["name"])] = n["_id"]
+                walk(n.get("children", []), n["_id"])
+
+        walk(tree.get("data", []), 0)
+        return out
 
     def add_interface(self, project_id: int, catid: int, title: str, path: str, method: str = "GET") -> Dict[str, Any]:
         payload = {
@@ -181,6 +213,13 @@ class YApiClient:
         if "_id" in payload and "id" not in payload:
             payload["id"] = payload["_id"]
         return self._request("/api/interface/up", method="POST", data=payload)
+
+    def save_interface(self, interface_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Upsert via /api/interface/save: 带 id 更新，不带 id 按 token+catid 新增。"""
+        payload = dict(interface_data)
+        if "_id" in payload and "id" not in payload:
+            payload["id"] = payload["_id"]
+        return self._request("/api/interface/save", method="POST", data=payload)
 
     def find_category_by_name(self, project_id: int, cat_name: str) -> Optional[Dict[str, Any]]:
         menu = self.list_menu(project_id)
@@ -203,8 +242,12 @@ class YApiClient:
         return None
 
 
-def resolve_client(base_url: str, explicit_cookie: Optional[str] = None) -> YApiClient:
-    """Resolve YApiClient using explicit cookie, env var, or local Chrome session."""
+def resolve_client(base_url: str, explicit_cookie: Optional[str] = None, token: Optional[str] = None) -> YApiClient:
+    """Resolve YApiClient: token (首选) > cookie 显式/环境变量 > 本地 Chrome 会话。"""
+    tok = token or os.getenv("YAPI_TOKEN")
+    if tok:
+        return YApiClient(base_url, token=tok)
+
     cookie = explicit_cookie or os.getenv("YAPI_COOKIE")
     if cookie:
         return YApiClient(base_url, cookie_str=cookie)
@@ -232,31 +275,36 @@ def build_json_schema(properties: Dict[str, Any], required: Optional[List[str]] 
 
 def main():
     parser = argparse.ArgumentParser(description="YApi CLI Automation Tool")
-    parser.add_argument("--url", default="https://yapi.sugonup.com", help="YApi base URL")
+    parser.add_argument("--url", default="https://yapi-new.sugonup.com", help="YApi base URL")
     parser.add_argument("--cookie", default=None, help="Explicit cookie string")
+    parser.add_argument("--token", default=None, help="Project token (or set YAPI_TOKEN env)")
 
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--url", default="https://yapi-new.sugonup.com", help="YApi base URL")
+    common.add_argument("--cookie", default=None, help="Explicit cookie string")
+    common.add_argument("--token", default=None, help="Project token (or set YAPI_TOKEN env)")
     subparsers = parser.add_subparsers(dest="subcommand", required=True)
 
     # auth-check
-    subparsers.add_parser("auth-check", help="Verify authentication with YApi")
+    subparsers.add_parser("auth-check", parents=[common], help="Verify authentication with YApi")
 
     # list-menu
-    p_list = subparsers.add_parser("list-menu", help="List project menu & categories")
+    p_list = subparsers.add_parser("list-menu", parents=[common], help="List project menu & categories")
     p_list.add_argument("--project-id", type=int, required=True, help="Project ID")
 
     # get-interface
-    p_get = subparsers.add_parser("get-interface", help="Get interface details")
+    p_get = subparsers.add_parser("get-interface", parents=[common], help="Get interface details")
     p_get.add_argument("--id", type=int, required=True, help="Interface ID")
 
     # add-cat
-    p_add_cat = subparsers.add_parser("add-cat", help="Create category")
+    p_add_cat = subparsers.add_parser("add-cat", parents=[common], help="Create category")
     p_add_cat.add_argument("--project-id", type=int, required=True, help="Project ID")
     p_add_cat.add_argument("--name", required=True, help="Category name")
     p_add_cat.add_argument("--desc", default="", help="Category description")
 
     args = parser.parse_args()
 
-    client = resolve_client(args.url, args.cookie)
+    client = resolve_client(args.url, args.cookie, args.token)
 
     if args.subcommand == "auth-check":
         domain = urllib.parse.urlparse(args.url).netloc
