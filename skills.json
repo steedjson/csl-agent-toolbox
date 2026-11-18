@@ -834,6 +834,42 @@
         "tests/reports/T8c_dual_protagonist.md",
         "tests/reports/T8d_partial_params.md",
         "tests/reports/T9_6seg_mode3.md"
+      ],
+      "depends_on": [
+        "csl-ace-step-music"
+      ]
+    },
+    {
+      "name": "csl-video-anime-ss1",
+      "description": "简体中文动漫短视频脚本与分镜生成器：基于 csl-video-ss1，支持直出、首帧、首尾帧；角色与画风双锚点、动漫动作接续、角色设定图、封面封底、BGM 和交付自检，默认 2D 赛璐璐；按有对白、无语音或纯环境音自动调用 csl-ace-step-music 生成配乐或主题曲",
+      "category": "media-generation",
+      "files": [
+        "SKILL.md",
+        "README.md",
+        "EVIDENCE.md",
+        "examples/regression.md"
+      ],
+      "depends_on": [
+        "csl-ace-step-music"
+      ]
+    },
+    {
+      "name": "csl-video-illustration-ss1",
+      "description": "简体中文 2D AI 绘画短视频脚本与分镜生成器：基于动漫技能的双锚点和连续性，默认水彩绘本，支持直出、首帧、首尾帧，并按有对白、无语音或纯环境音调用 csl-ace-step-music",
+      "category": "media-generation",
+      "depends_on": [
+        "csl-ace-step-music"
+      ],
+      "files": [
+        "SKILL.md"
+      ]
+    },
+    {
+      "name": "csl-ace-step-music",
+      "description": "用本机 ACE-Step 1.5 生成音乐：先摆出功能、风格、人声、乐器、时长、格式等可选项让用户选，选完再出 MP3。文生曲、翻唱、局部重绘、音轨提取、叠轨、补全、纯音乐",
+      "category": "media-generation",
+      "files": [
+        "SKILL.md"
       ]
     },
     {
