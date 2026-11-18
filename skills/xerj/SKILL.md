@@ -84,6 +84,7 @@ The installer resolves the official GitHub release, downloads the matching macOS
 The command refuses to overwrite an existing binary unless `--force` is supplied. `--version` is useful for a deliberate pin or rollback, but the release must exist as an official macOS arm64 asset. Installation stops if a project operation is active. Do not use `--force` during `xerj-project watch` or indexing.
 
 Project commands automatically ensure the node is healthy before using it. The installed lifecycle helper is `~/.bun/bin/xerj-service`. `info` and help do not start the service.
+In a read-only sandbox, `search`, `def` and `query` use a shared lifecycle lock when write access is denied. They require an already healthy service; indexing and service startup still require write access.
 
 - Index before first use. Preview a large or unfamiliar folder with `index --dry-run`; do not index unrelated folders or clone reference repositories without a request.
 - Re-run `index` after edits, or use `watch` in a user-visible terminal and stop it with Ctrl+C. Indexing uses `--no-graph` so added/changed/deleted files reconcile; do not add `--fresh`.

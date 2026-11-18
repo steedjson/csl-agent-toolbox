@@ -85,6 +85,19 @@ async function ensureUnlocked() {
   }
 }
 export async function ensureService() { return locked(ensureUnlocked); }
+export async function acquireReadOperation() {
+  const fd=openSync(lock,'r');
+  try {
+    const deadline=Date.now()+900000;
+    while(flock(fd,1|4)!==0) {
+      if(Date.now()>deadline) throw new Error('Timed out waiting for XERJ lifecycle lock');
+      await delay(100);
+    }
+    if(existsSync(recoveryMarker)) throw new Error('XERJ restore needs attention; see '+recoveryMarker);
+    if(!(await healthy())) throw new Error('XERJ service unavailable; start it outside the sandbox');
+    return ()=>{ flock(fd,8); closeSync(fd); };
+  } catch(e) { flock(fd,8); closeSync(fd); throw e; }
+}
 export async function acquireOperation() {
   return locked(async()=>{
     await ensureUnlocked();

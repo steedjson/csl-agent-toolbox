@@ -4,7 +4,7 @@ import { realpathSync, readFileSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { acquireOperation, scheduleUpdate } from './xerj-service';
+import { acquireOperation, acquireReadOperation, scheduleUpdate } from './xerj-service';
 import { indexClient } from './index-client';
 
 const home = homedir();
@@ -69,10 +69,18 @@ for (const arg of args) {
   }
 }
 let releaseOperation;
-try { releaseOperation = await acquireOperation(); }
+let readOnly = false;
+try {
+  try { releaseOperation = await acquireOperation(); }
+  catch (e) {
+    if (!['EPERM', 'EACCES', 'EROFS'].includes(e.code) || !['search', 'def', 'query'].includes(command)) throw e;
+    releaseOperation = await acquireReadOperation();
+    readOnly = true;
+  }
+}
 catch (e) { console.error(`xerj-project: ${e.message}`); process.exit(1); }
 process.on('exit', releaseOperation);
-scheduleUpdate();
+if (!readOnly) scheduleUpdate();
 let key;
 try { key = readFileSync(join(storage, 'data/admin.key'), 'utf8').trim(); }
 catch { fail('local node key is unavailable; check launchctl print gui/$(id -u)/local.xerj'); }
